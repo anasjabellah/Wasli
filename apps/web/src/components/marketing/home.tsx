@@ -314,6 +314,22 @@ export function MarketingHome() {
         scrollTrigger: { trigger: '.mh-flow', start: 'top 80%', once: true },
       });
       gsap.to('.mh-drift', { y: -8, duration: 2.6, repeat: -1, yoyo: true, ease: 'sine.inOut', stagger: 0.2 });
+      const floats: Array<[string, number, string, number]> = [
+        ['.mh-hero .mh-tilt.parent', -7, '-=1.2', 3.8],
+        ['.mh-hero .mh-tilt.queue', -5, '+=1.1', 4.6],
+        ['.mh-hero .mh-tilt.pin', -6, '-=1.1', 3.4],
+      ];
+      floats.forEach(([target, y, rotation, duration], index) => {
+        gsap.to(target, {
+          y,
+          rotation,
+          duration,
+          delay: index * 0.35,
+          repeat: -1,
+          yoyo: true,
+          ease: 'sine.inOut',
+        });
+      });
       ScrollTrigger.batch('.mh-rise', {
         start: 'top 88%',
         once: true,
@@ -357,27 +373,51 @@ export function MarketingHome() {
               <span className="lime">Pickup.</span>
             </h1>
             <div className="mh-tilt parent">
-              <article className="mh-card mh-drift" aria-hidden="true">
-                <p className="mh-mini">Wasli</p>
-                <strong>Amina</strong>
-                <span>{locale === 'ar' ? 'رياضيات' : 'Maths 4e'}</span>
+              <article className="mh-card mh-float parent-ui" aria-hidden="true">
+                <header className="mh-device">
+                  <span className="mh-device-mark">W</span>
+                  <span>Wasli</span>
+                  <i className="mh-status-dot" />
+                </header>
+                <div className="mh-person">
+                  <span className="mh-avatar">A</span>
+                  <span>
+                    <strong>Amina</strong>
+                    <small>{locale === 'ar' ? 'رياضيات' : 'Maths 4e'}</small>
+                  </span>
+                </div>
                 <em className="mh-pill wait">{text.preparing}</em>
                 <b className="mh-card-action">{locale === 'ar' ? 'لقد وصلت' : 'Je suis arrivé'}</b>
               </article>
             </div>
             <div className="mh-tilt queue">
-              <article className="mh-card mh-drift" aria-hidden="true">
-                <p className="mh-mini">{text.file}</p>
-                <p className="mh-queue-class">{locale === 'ar' ? 'رياضيات' : 'Maths 4e'}</p>
-                <div className="mh-row"><span>Amina</span><span className="mh-pill">{text.ready}</span></div>
-                <div className="mh-row"><span>Youssef</span><span className="mh-pill wait">{text.preparing}</span></div>
+              <article className="mh-card mh-float queue-ui" aria-hidden="true">
+                <header className="mh-device">
+                  <span>{text.file}</span>
+                  <b>2</b>
+                </header>
+                <div className="mh-qrow">
+                  <span className="mh-avatar">A</span>
+                  <span><strong>Amina</strong><small>{locale === 'ar' ? 'رياضيات' : 'Maths 4e'}</small></span>
+                  <em className="mh-pill">{text.ready}</em>
+                </div>
+                <div className="mh-qrow">
+                  <span className="mh-avatar alt">Y</span>
+                  <span><strong>Youssef</strong><small>{locale === 'ar' ? 'رياضيات' : 'Maths 4e'}</small></span>
+                  <em className="mh-pill wait">{text.preparing}</em>
+                </div>
               </article>
             </div>
             <div className="mh-tilt pin">
-              <article className="mh-card mh-drift" aria-hidden="true">
-                <p className="mh-mini">{locale === 'ar' ? 'الاستقبال' : 'Réception'}</p>
-                <strong className="mh-dots">••••••</strong>
-                <span>{locale === 'ar' ? 'تسليم مؤكد' : 'Remise sécurisée'}</span>
+              <article className="mh-card mh-float pin-ui" aria-hidden="true">
+                <header className="mh-device">
+                  <span className="mh-lock" aria-hidden="true">
+                    <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4.5 7V5a3.5 3.5 0 0 1 7 0v2" fill="none" stroke="currentColor" strokeWidth="1.6" /><rect x="3" y="7" width="10" height="7" rx="2" fill="currentColor" /></svg>
+                  </span>
+                  <span>{locale === 'ar' ? 'الاستقبال' : 'Réception'}</span>
+                </header>
+                <strong className="mh-code">••••••</strong>
+                <span className="mh-secure">{locale === 'ar' ? 'تسليم مؤكد' : 'Remise sécurisée'}</span>
               </article>
             </div>
             <svg className="mh-arrow" viewBox="0 0 140 90" aria-hidden="true">
