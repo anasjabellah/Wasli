@@ -228,6 +228,48 @@ function InterfaceCard({
   );
 }
 
+function FlowPreview({
+  kind,
+  locale,
+  file,
+  ready,
+  preparing,
+}: {
+  kind: 'parent' | 'queue' | 'pin';
+  locale: 'fr' | 'ar';
+  file: string;
+  ready: string;
+  preparing: string;
+}) {
+  const ar = locale === 'ar';
+  const klass = ar ? 'رياضيات' : 'Maths 4e';
+  if (kind === 'parent') {
+    return (
+      <article className="mh-flow-ui">
+        <header className="mh-flow-top"><span className="mh-flow-mark">W</span> Wasli</header>
+        <p className="mh-flow-person"><strong>Amina</strong><small>{klass}</small></p>
+        <b className="mh-flow-action">{ar ? 'لقد وصلت' : 'Je suis arrivé'}</b>
+      </article>
+    );
+  }
+  if (kind === 'queue') {
+    return (
+      <article className="mh-flow-ui queue">
+        <header className="mh-flow-top"><span>{file}</span><b className="mh-flow-count">2</b></header>
+        <p className="mh-flow-row"><i className="mh-flow-avatar">A</i><span>Amina<small>{klass}</small></span><em className="mh-flow-pill on">{ready}</em></p>
+        <p className="mh-flow-row"><i className="mh-flow-avatar alt">Y</i><span>Youssef<small>{klass}</small></span><em className="mh-flow-pill">{preparing}</em></p>
+      </article>
+    );
+  }
+  return (
+    <article className="mh-flow-ui pin">
+      <header className="mh-flow-top"><span>{ar ? 'الاستقبال' : 'Réception'}</span></header>
+      <strong className="mh-flow-code">••••••</strong>
+      <span className="mh-flow-secure">{ar ? 'تسليم مؤكد' : 'Remise sécurisée'}</span>
+    </article>
+  );
+}
+
 function Sketch({
   kind,
   locale,
@@ -443,29 +485,38 @@ export function MarketingHome() {
 
       <div className="mh-sheet">
         <div className="mh-sheet-inner">
-        <section className="mh-flow">
-          {[
-            [locale === 'ar' ? 'يصل ولي الأمر.' : 'Le parent arrive.', text.steps[0][1]],
-            [locale === 'ar' ? 'يحضّر المعلم.' : "L'enseignant prépare.", text.steps[3][1]],
-            [locale === 'ar' ? 'يُؤكد التسليم.' : 'La remise est confirmée.', text.steps[4][1]],
-          ].map(([title, body], index) => (
-            <div className="mh-flow-slot" key={title}>
-              {index > 0 ? <Arrow /> : null}
-              <article className="mh-flow-item mh-rise">
-                <span className="mh-num">0{index + 1}</span>
-                <h3>{title}</h3>
-                <p>{body}</p>
-                <InterfaceCard
-                  kind={index === 0 ? 'parent' : index === 1 ? 'queue' : 'pin'}
-                  locale={locale}
-                  file={text.file}
-                  ready={text.ready}
-                  preparing={text.preparing}
-                />
-              </article>
+        <section className="mh-flow" aria-label={locale === 'ar' ? 'مسار الخروج' : 'Parcours de sortie'}>
+          <article className="mh-flow-step parent mh-rise">
+            <span className="mh-num">01</span>
+            <h3>{locale === 'ar' ? 'يصل ولي الأمر.' : 'Le parent arrive.'}</h3>
+            <p>{locale === 'ar' ? 'يفتح التطبيق عند المركز.' : 'Il ouvre l’application au centre.'}</p>
+            <div className="mh-flow-preview" aria-hidden="true">
+              <FlowPreview kind="parent" locale={locale} file={text.file} ready={text.ready} preparing={text.preparing} />
             </div>
-          ))}
-          <p className="mh-caption">{text.caption}</p>
+          </article>
+          <Arrow className="mh-draw to-teacher" />
+          <article className="mh-flow-step teacher mh-rise">
+            <span className="mh-num">02</span>
+            <h3>{locale === 'ar' ? 'يحضّر المعلم.' : "L'enseignant prépare."}</h3>
+            <p>{locale === 'ar' ? 'يصل الطلب إلى صف القسم، ثم تُعلَّم الجاهزية.' : 'La demande entre dans sa classe, jusqu’au statut prêt.'}</p>
+            <div className="mh-flow-preview" aria-hidden="true">
+              <FlowPreview kind="queue" locale={locale} file={text.file} ready={text.ready} preparing={text.preparing} />
+            </div>
+          </article>
+          <Arrow className="mh-draw to-desk" />
+          <article className="mh-flow-step desk mh-rise">
+            <span className="mh-num">03</span>
+            <h3>{locale === 'ar' ? 'يُؤكد التسليم.' : 'La remise est confirmée.'}</h3>
+            <p>{locale === 'ar' ? 'يُظهر ولي الأمر الرمز. يتحقق الفريق منه.' : 'Le parent montre le code. L’équipe le vérifie.'}</p>
+            <div className="mh-flow-preview" aria-hidden="true">
+              <FlowPreview kind="pin" locale={locale} file={text.file} ready={text.ready} preparing={text.preparing} />
+            </div>
+          </article>
+          <p className="mh-flow-note">
+            {locale === 'ar'
+              ? 'الأسماء توضّح الشاشة وليست صفاً مباشراً.'
+              : 'Prénoms d’illustration, pas une file en direct.'}
+          </p>
         </section>
 
         <section className="mh-why" id="pourquoi">
