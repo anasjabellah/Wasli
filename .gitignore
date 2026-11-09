@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.next/
+.expo/
+coverage/
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+apps/api/src/generated/
+npm-debug.log*
+.turbo/
+android/
+ios/
+*.log

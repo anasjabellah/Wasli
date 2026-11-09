@@ -1,0 +1,619 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum CenterStatus {
+  PENDING_APPROVAL
+  ACTIVE
+  REJECTED
+  SUSPENDED
+}
+
+enum SupportedLanguage {
+  AR
+  FR
+  EN
+}
+
+enum MembershipRole {
+  PLATFORM_ADMIN
+  CENTER_ADMIN
+  TEACHER
+  RECEPTION
+  PARENT
+}
+
+enum MembershipStatus {
+  INVITED
+  ACTIVE
+  INACTIVE
+}
+
+enum StudentStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum GuardianRelationship {
+  MOTHER
+  FATHER
+  GUARDIAN
+  OTHER
+}
+
+enum Weekday {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum ClassStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum SessionStatus {
+  SCHEDULED
+  IN_PROGRESS
+  DELAYED
+  COMPLETED
+  CANCELLED
+}
+
+enum PickupStatus {
+  PENDING
+  SCHEDULED
+  NOTIFIED
+  PREPARING
+  READY
+  HANDED_OVER
+  CANCELLED
+  REJECTED
+  EXPIRED
+}
+
+enum PickupEventType {
+  CREATED
+  SCHEDULED
+  NOTIFIED
+  PREPARING
+  DELAYED
+  READY
+  HANDOVER_ATTEMPTED
+  HANDED_OVER
+  CANCELLED
+  REJECTED
+  EXPIRED
+  PRIORITY_UPDATED
+}
+
+enum NotificationChannel {
+  PUSH
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  DELIVERED
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  SUSPENDED
+  CANCELLED
+}
+
+model User {
+  id           String     @id @default(uuid()) @db.Uuid
+  email        String     @unique
+  passwordHash String     @map("password_hash")
+  firstName    String     @map("first_name")
+  lastName     String     @map("last_name")
+  phone        String?
+  status       UserStatus @default(ACTIVE)
+  locale       String     @default("fr")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  deletedAt    DateTime?  @map("deleted_at")
+
+  memberships         CenterMembership[]
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
+  pushTokens          PushToken[]
+  parentLinks         ParentStudent[]      @relation("ParentUser")
+  teachingAssignments ClassTeacher[]       @relation("TeacherUser")
+  pickupRequests      PickupRequest[]      @relation("PickupRequester")
+  pickupEvents        PickupEvent[]        @relation("PickupEventActor")
+  verifiedHandovers   PickupVerification[] @relation("VerifiedBy")
+  notifications       Notification[]
+  auditLogs           AuditLog[]           @relation("AuditActor")
+  reviewedCenters     Center[]             @relation("CenterReviewer")
+
+  @@index([status])
+  @@map("users")
+}
+
+model Center {
+  id          String              @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String              @unique
+  addressLine String?             @map("address_line")
+  city        String?
+  phone       String?
+  email       String?
+  timezone    String              @default("Africa/Casablanca")
+  languages   SupportedLanguage[] @default([FR, AR])
+  status           CenterStatus @default(ACTIVE)
+  rejectionReason  String?      @map("rejection_reason")
+  reviewedAt       DateTime?    @map("reviewed_at")
+  reviewedByUserId String?      @map("reviewed_by_user_id") @db.Uuid
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+  deletedAt        DateTime?    @map("deleted_at")
+
+  reviewedBy User? @relation("CenterReviewer", fields: [reviewedByUserId], references: [id])
+
+  settings           CenterSettings?
+  memberships        CenterMembership[]
+  students           Student[]
+  classes            Class[]
+  sessions           ClassSession[]
+  pickupRequests     PickupRequest[]
+  parentStudents      ParentStudent[]
+  authorizedPickups   AuthorizedPickup[]
+  classTeachers       ClassTeacher[]
+  classEnrollments    ClassEnrollment[]
+  classSchedules      ClassSchedule[]
+  pickupEvents        PickupEvent[]
+  pickupVerifications PickupVerification[]
+  notifications       Notification[]
+  notificationOutbox  NotificationOutbox[]
+  auditLogs           AuditLog[]
+  subscription        CenterSubscription?
+
+  @@map("centers")
+}
+
+model CenterSettings {
+  id                   String   @id @default(uuid()) @db.Uuid
+  centerId             String   @unique @map("center_id") @db.Uuid
+  pickupLeadMinutes    Int      @default(15) @map("pickup_lead_minutes")
+  requestExpiryMinutes Int      @default(120) @map("request_expiry_minutes")
+  maxPinAttempts       Int      @default(5) @map("max_pin_attempts")
+  pinLength            Int      @default(6) @map("pin_length")
+  priorityWeights      Json     @default("{\"sessionCompletion\":100,\"waitingMinutes\":1,\"delayed\":50,\"teacherAvailable\":10}") @map("priority_weights")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  center Center @relation(fields: [centerId], references: [id])
+
+  @@map("center_settings")
+}
+
+model CenterMembership {
+  id        String           @id @default(uuid()) @db.Uuid
+  centerId  String?          @map("center_id") @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  role      MembershipRole
+  status    MembershipStatus @default(ACTIVE)
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+  deletedAt DateTime?        @map("deleted_at")
+
+  center Center? @relation(fields: [centerId], references: [id])
+  user   User    @relation(fields: [userId], references: [id])
+
+  @@index([centerId, userId])
+  @@index([userId])
+  @@map("center_memberships")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  userAgent String?   @map("user_agent")
+  ipAddress String?   @map("ip_address")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+model PushToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  token     String    @unique
+  platform  String
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  revokedAt DateTime? @map("revoked_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("push_tokens")
+}
+
+model Student {
+  id          String        @id @default(uuid()) @db.Uuid
+  centerId    String        @map("center_id") @db.Uuid
+  firstName   String        @map("first_name")
+  lastName    String        @map("last_name")
+  dateOfBirth DateTime?     @map("date_of_birth") @db.Date
+  status      StudentStatus @default(ACTIVE)
+  notes       String?
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  deletedAt   DateTime?     @map("deleted_at")
+
+  center            Center             @relation(fields: [centerId], references: [id])
+  parents           ParentStudent[]
+  authorizedPickups AuthorizedPickup[]
+  classEnrollments  ClassEnrollment[]
+  pickupRequests    PickupRequest[]
+
+  @@unique([id, centerId])
+  @@index([centerId, status])
+  @@index([centerId, lastName, firstName])
+  @@map("students")
+}
+
+model ParentStudent {
+  id               String               @id @default(uuid()) @db.Uuid
+  centerId         String               @map("center_id") @db.Uuid
+  parentUserId     String               @map("parent_user_id") @db.Uuid
+  studentId        String               @map("student_id") @db.Uuid
+  relationship     GuardianRelationship
+  canRequestPickup Boolean              @default(true) @map("can_request_pickup")
+  createdAt        DateTime             @default(now()) @map("created_at")
+  updatedAt        DateTime             @updatedAt @map("updated_at")
+  deletedAt        DateTime?            @map("deleted_at")
+
+  center  Center  @relation(fields: [centerId], references: [id])
+  parent  User    @relation("ParentUser", fields: [parentUserId], references: [id])
+  student Student @relation(fields: [studentId], references: [id])
+
+  @@unique([parentUserId, studentId])
+  @@index([parentUserId, studentId])
+  @@index([studentId])
+  @@index([centerId])
+  @@map("parent_students")
+}
+
+model AuthorizedPickup {
+  id           String               @id @default(uuid()) @db.Uuid
+  centerId     String               @map("center_id") @db.Uuid
+  studentId    String               @map("student_id") @db.Uuid
+  fullName     String               @map("full_name")
+  phone        String?
+  relationship GuardianRelationship
+  isActive     Boolean              @default(true) @map("is_active")
+  createdAt    DateTime             @default(now()) @map("created_at")
+  updatedAt    DateTime             @updatedAt @map("updated_at")
+  deletedAt    DateTime?            @map("deleted_at")
+
+  center        Center               @relation(fields: [centerId], references: [id])
+  student       Student              @relation(fields: [studentId], references: [id])
+  verifications PickupVerification[]
+
+  @@index([centerId, studentId])
+  @@map("authorized_pickups")
+}
+
+model Class {
+  id        String      @id @default(uuid()) @db.Uuid
+  centerId  String      @map("center_id") @db.Uuid
+  name      String
+  subject   String?
+  room      String?
+  status    ClassStatus @default(ACTIVE)
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+  deletedAt DateTime?   @map("deleted_at")
+
+  center      Center            @relation(fields: [centerId], references: [id])
+  teachers    ClassTeacher[]
+  schedules   ClassSchedule[]
+  sessions    ClassSession[]
+  enrollments ClassEnrollment[]
+
+  @@unique([id, centerId])
+  @@index([centerId, status])
+  @@map("classes")
+}
+
+model ClassTeacher {
+  id            String    @id @default(uuid()) @db.Uuid
+  centerId      String    @map("center_id") @db.Uuid
+  classId       String    @map("class_id") @db.Uuid
+  teacherUserId String    @map("teacher_user_id") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  center  Center @relation(fields: [centerId], references: [id])
+  class   Class  @relation(fields: [classId], references: [id])
+  teacher User   @relation("TeacherUser", fields: [teacherUserId], references: [id])
+
+  @@unique([classId, teacherUserId])
+  @@index([centerId, teacherUserId])
+  @@map("class_teachers")
+}
+
+model ClassEnrollment {
+  id        String    @id @default(uuid()) @db.Uuid
+  centerId  String    @map("center_id") @db.Uuid
+  classId   String    @map("class_id") @db.Uuid
+  studentId String    @map("student_id") @db.Uuid
+  createdAt DateTime  @default(now()) @map("created_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  center  Center  @relation(fields: [centerId], references: [id])
+  class   Class   @relation(fields: [classId], references: [id])
+  student Student @relation(fields: [studentId], references: [id])
+
+  @@unique([classId, studentId])
+  @@index([centerId, studentId])
+  @@map("class_enrollments")
+}
+
+model ClassSchedule {
+  id             String    @id @default(uuid()) @db.Uuid
+  centerId       String    @map("center_id") @db.Uuid
+  classId        String    @map("class_id") @db.Uuid
+  weekday        Weekday
+  startTime      String    @map("start_time") @db.VarChar(5)
+  endTime        String    @map("end_time") @db.VarChar(5)
+  effectiveFrom  DateTime  @map("effective_from") @db.Date
+  effectiveUntil DateTime? @map("effective_until") @db.Date
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  center   Center         @relation(fields: [centerId], references: [id])
+  class    Class          @relation(fields: [classId], references: [id])
+  sessions ClassSession[]
+
+  @@unique([id, centerId])
+  @@index([centerId, classId, weekday])
+  @@map("class_schedules")
+}
+
+model ClassSession {
+  id             String        @id @default(uuid()) @db.Uuid
+  centerId       String        @map("center_id") @db.Uuid
+  classId        String        @map("class_id") @db.Uuid
+  scheduleId     String?       @map("schedule_id") @db.Uuid
+  startsAt       DateTime      @map("starts_at")
+  scheduledEndAt DateTime      @map("scheduled_end_at")
+  actualEndAt    DateTime?     @map("actual_end_at")
+  status         SessionStatus @default(SCHEDULED)
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @updatedAt @map("updated_at")
+  deletedAt      DateTime?     @map("deleted_at")
+
+  center         Center          @relation(fields: [centerId], references: [id])
+  class          Class           @relation(fields: [classId], references: [id])
+  schedule       ClassSchedule?  @relation(fields: [scheduleId], references: [id])
+  pickupRequests PickupRequest[]
+
+  @@unique([id, centerId])
+  @@index([centerId, startsAt])
+  @@index([centerId, scheduledEndAt])
+  @@index([classId, startsAt])
+  @@map("class_sessions")
+}
+
+model PickupRequest {
+  id              String       @id @default(uuid()) @db.Uuid
+  centerId        String       @map("center_id") @db.Uuid
+  studentId       String       @map("student_id") @db.Uuid
+  classSessionId  String       @map("class_session_id") @db.Uuid
+  requestedById   String       @map("requested_by_id") @db.Uuid
+  status          PickupStatus @default(PENDING)
+  requestedAt     DateTime     @default(now()) @map("requested_at")
+  eligibleAt      DateTime?    @map("eligible_at")
+  notifiedAt      DateTime?    @map("notified_at")
+  preparingAt     DateTime?    @map("preparing_at")
+  readyAt         DateTime?    @map("ready_at")
+  handedOverAt    DateTime?    @map("handed_over_at")
+  expiresAt       DateTime?    @map("expires_at")
+  priorityScore   Int          @default(0) @map("priority_score")
+  delayReason     String?      @map("delay_reason")
+  delayedAt       DateTime?    @map("delayed_at")
+  cancelledReason String?      @map("cancelled_reason")
+  rejectedReason  String?      @map("rejected_reason")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+  deletedAt       DateTime?    @map("deleted_at")
+
+  center       Center              @relation(fields: [centerId], references: [id])
+  student      Student             @relation(fields: [studentId], references: [id])
+  classSession ClassSession        @relation(fields: [classSessionId], references: [id])
+  requestedBy  User                @relation("PickupRequester", fields: [requestedById], references: [id])
+  events       PickupEvent[]
+  verification PickupVerification?
+  notifications Notification[]
+
+  @@unique([id, centerId])
+  @@index([centerId, status])
+  @@index([studentId, classSessionId])
+  @@index([centerId, requestedAt])
+  @@index([centerId, status, priorityScore])
+  @@map("pickup_requests")
+}
+
+model PickupEvent {
+  id              String           @id @default(uuid()) @db.Uuid
+  centerId        String           @map("center_id") @db.Uuid
+  pickupRequestId String           @map("pickup_request_id") @db.Uuid
+  type            PickupEventType
+  fromStatus      PickupStatus?    @map("from_status")
+  toStatus        PickupStatus?    @map("to_status")
+  actorUserId     String?          @map("actor_user_id") @db.Uuid
+  reason          String?
+  metadata        Json?
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  center        Center        @relation(fields: [centerId], references: [id])
+  pickupRequest PickupRequest @relation(fields: [pickupRequestId], references: [id])
+  actor         User?         @relation("PickupEventActor", fields: [actorUserId], references: [id])
+
+  @@index([pickupRequestId, createdAt])
+  @@index([centerId, createdAt])
+  @@map("pickup_events")
+}
+
+model PickupVerification {
+  id                 String    @id @default(uuid()) @db.Uuid
+  centerId           String    @map("center_id") @db.Uuid
+  pickupRequestId    String    @unique @map("pickup_request_id") @db.Uuid
+  pinHash            String    @map("pin_hash")
+  pinCiphertext      String    @map("pin_ciphertext")
+  authorizedPickupId String?   @map("authorized_pickup_id") @db.Uuid
+  attemptCount       Int       @default(0) @map("attempt_count")
+  verifiedAt         DateTime? @map("verified_at")
+  verifiedByUserId   String?   @map("verified_by_user_id") @db.Uuid
+  expiresAt          DateTime  @map("expires_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  center           Center            @relation(fields: [centerId], references: [id])
+  pickupRequest    PickupRequest     @relation(fields: [pickupRequestId], references: [id])
+  authorizedPickup AuthorizedPickup? @relation(fields: [authorizedPickupId], references: [id])
+  verifiedBy       User?             @relation("VerifiedBy", fields: [verifiedByUserId], references: [id])
+
+  @@index([centerId])
+  @@map("pickup_verifications")
+}
+
+model Notification {
+  id              String              @id @default(uuid()) @db.Uuid
+  centerId        String              @map("center_id") @db.Uuid
+  userId          String              @map("user_id") @db.Uuid
+  pickupRequestId String?             @map("pickup_request_id") @db.Uuid
+  channel         NotificationChannel
+  status          NotificationStatus  @default(PENDING)
+  title           String
+  body            String
+  payload         Json?
+  createdAt       DateTime            @default(now()) @map("created_at")
+  updatedAt       DateTime            @updatedAt @map("updated_at")
+
+  center        Center         @relation(fields: [centerId], references: [id])
+  user          User           @relation(fields: [userId], references: [id])
+  pickupRequest PickupRequest? @relation(fields: [pickupRequestId], references: [id])
+  outbox        NotificationOutbox?
+
+  @@unique([id, centerId])
+  @@index([centerId, status])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+model NotificationOutbox {
+  id             String             @id @default(uuid()) @db.Uuid
+  centerId       String             @map("center_id") @db.Uuid
+  notificationId String             @unique @map("notification_id") @db.Uuid
+  status         NotificationStatus @default(PENDING)
+  attemptCount   Int                @default(0) @map("attempt_count")
+  nextAttemptAt  DateTime           @default(now()) @map("next_attempt_at")
+  lastError      String?            @map("last_error")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  center       Center       @relation(fields: [centerId], references: [id])
+  notification Notification @relation(fields: [notificationId], references: [id])
+
+  @@index([status, nextAttemptAt])
+  @@index([centerId])
+  @@map("notification_outbox")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  centerId    String?  @map("center_id") @db.Uuid
+  actorUserId String?  @map("actor_user_id") @db.Uuid
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    String?  @map("entity_id") @db.Uuid
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  center Center? @relation(fields: [centerId], references: [id])
+  actor  User?   @relation("AuditActor", fields: [actorUserId], references: [id])
+
+  @@index([centerId, createdAt])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+model SubscriptionPlan {
+  id          String   @id @default(uuid()) @db.Uuid
+  code        String   @unique
+  name        String
+  description String?
+  priceCents  Int      @map("price_cents")
+  currency    String   @default("MAD")
+  interval    String   @default("month")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  subscriptions CenterSubscription[]
+
+  @@map("subscription_plans")
+}
+
+model CenterSubscription {
+  id        String             @id @default(uuid()) @db.Uuid
+  centerId  String             @unique @map("center_id") @db.Uuid
+  planId    String             @map("plan_id") @db.Uuid
+  status    SubscriptionStatus @default(TRIAL)
+  startsAt  DateTime           @map("starts_at")
+  endsAt    DateTime?          @map("ends_at")
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
+
+  center Center           @relation(fields: [centerId], references: [id])
+  plan   SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  @@map("center_subscriptions")
+}

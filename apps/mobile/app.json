@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "Wasli",
+    "slug": "wasli",
+    "scheme": "wasli",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "plugins": ["expo-router"]
+  }
+}

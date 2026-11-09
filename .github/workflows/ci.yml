@@ -1,0 +1,40 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - run: docker compose up -d postgres
+      - name: Wait for PostgreSQL
+        run: |
+          for _ in $(seq 1 30); do
+            docker compose exec -T postgres pg_isready -U wasli -d wasli && exit 0
+            sleep 2
+          done
+          exit 1
+      - name: Apply migrations
+        run: npm run db:deploy
+        env:
+          DATABASE_URL: postgresql://wasli:wasli@127.0.0.1:55432/wasli?schema=public
+          APP_DATABASE_URL: postgresql://wasli_app:wasli_app@127.0.0.1:55432/wasli?schema=public
+          APP_DB_PASSWORD: wasli_app
+      - name: Tenant isolation tests
+        run: npm run test:integration
+        env:
+          DATABASE_URL: postgresql://wasli:wasli@127.0.0.1:55432/wasli?schema=public
+          APP_DATABASE_URL: postgresql://wasli_app:wasli_app@127.0.0.1:55432/wasli?schema=public
+          APP_DB_PASSWORD: wasli_app

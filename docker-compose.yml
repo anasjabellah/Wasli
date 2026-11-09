@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: wasli
+      POSTGRES_PASSWORD: wasli
+      POSTGRES_DB: wasli
+    ports:
+      - "55432:5432"
+    volumes:
+      - wasli_pg:/var/lib/postgresql/data
+      - ./infrastructure/database/init-role.sql:/docker-entrypoint-initdb.d/01-init-role.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wasli -d wasli"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/api.Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: postgresql://wasli:wasli@postgres:5432/wasli?schema=public
+      APP_DATABASE_URL: postgresql://wasli_app:wasli_app@postgres:5432/wasli?schema=public
+      APP_DB_PASSWORD: wasli_app
+      CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+      JWT_ACCESS_SECRET: wasli-dev-access-secret-32chars-min
+      PIN_ENCRYPTION_KEY: wasli-dev-pin-encryption-key-32ch
+      ACCESS_TOKEN_TTL_SECONDS: 900
+      REFRESH_TOKEN_TTL_SECONDS: 2592000
+
+volumes:
+  wasli_pg:

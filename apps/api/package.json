@@ -1,0 +1,49 @@
+{
+  "name": "@wasli/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node dev-runner.mjs",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:integration": "tsc -p tsconfig.build.json && vitest run --config vitest.integration.config.ts",
+    "lint": "oxlint src test",
+    "prisma:generate": "prisma generate",
+    "ensure-role": "tsx src/scripts/ensure-app-role.ts",
+    "prisma:deploy": "tsx src/scripts/ensure-app-role.ts && prisma migrate deploy",
+    "seed:parent": "tsx src/scripts/seed-parent-dev.ts"
+  },
+  "dependencies": {
+    "@nestjs/common": "^12.4.1",
+    "@nestjs/config": "^12.1.1",
+    "@nestjs/core": "^12.4.1",
+    "@nestjs/platform-express": "^12.4.1",
+    "@nestjs/swagger": "^12.1.1",
+    "@nestjs/throttler": "^6.4.0",
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
+    "@wasli/config": "*",
+    "@wasli/shared": "*",
+    "@wasli/validation": "*",
+    "argon2": "^0.45.2",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.2",
+    "dotenv": "^17.2.3",
+    "helmet": "^8.1.0",
+    "pg": "^8.16.3",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.19.0",
+    "@types/pg": "^8.15.6",
+    "prisma": "^7.10.1",
+    "tsx": "^4.20.6",
+    "typescript": "^6.0.3",
+    "vitest": "^3.2.4"
+  }
+}

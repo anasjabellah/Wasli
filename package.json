@@ -1,0 +1,37 @@
+{
+  "name": "wasli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Wasli student pickup management platform",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "overrides": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "scripts": {
+    "build:packages": "npm run build -w @wasli/shared && npm run build -w @wasli/validation && npm run build -w @wasli/config",
+    "db:generate": "npm run prisma:generate -w @wasli/api",
+    "db:deploy": "npm run prisma:deploy -w @wasli/api",
+    "db:seed": "npm run seed:parent -w @wasli/api",
+    "build": "npm run build:packages && npm run db:generate && npm run build -w @wasli/api && npm run build -w @wasli/web",
+    "typecheck": "npm run build:packages && npm run db:generate && npm run typecheck -w @wasli/shared && npm run typecheck -w @wasli/validation && npm run typecheck -w @wasli/config && npm run typecheck -w @wasli/api && npm run typecheck -w @wasli/web && npm run typecheck -w @wasli/mobile",
+    "test": "npm run build:packages && npm run db:generate && npm run test -w @wasli/shared && npm run test -w @wasli/validation && npm run test -w @wasli/config && npm run test -w @wasli/api",
+    "test:integration": "npm run build:packages && npm run db:generate && npm run test:integration -w @wasli/api",
+    "lint": "oxlint apps packages",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "dev:api": "npm run dev -w @wasli/api",
+    "dev:web": "npm run dev -w @wasli/web",
+    "dev:mobile": "npm run dev -w @wasli/mobile"
+  },
+  "devDependencies": {
+    "oxlint": "^1.28.0",
+    "prettier": "^3.6.2"
+  }
+}
