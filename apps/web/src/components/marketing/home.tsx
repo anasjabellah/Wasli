@@ -155,70 +155,119 @@ const copy = {
   },
 };
 
-function PhoneMock({ locale }: { locale: 'fr' | 'ar' }) {
-  const ar = locale === 'ar';
+function Arrow({ className = 'mh-draw' }: { className?: string }) {
   return (
-    <div className="mh-phone" aria-hidden="true">
-      <div className="mh-screen">
-        <span className="mh-speaker" />
-        <p className="mh-mini">Wasli</p>
-        <div className="mh-student">
-          <strong>Amina</strong>
-          <span>{ar ? 'رياضيات' : 'Maths 4e'}</span>
-        </div>
-        <p className="mh-status">{ar ? 'تحضير' : 'Préparation'}</p>
-        <span className="mh-btn">{ar ? 'لقد وصلت' : 'Je suis arrivé'}</span>
-        <p className="mh-code-line"><span>{ar ? 'الرمز' : 'Code'}</span> ••••••</p>
-      </div>
-    </div>
+    <svg className={className} viewBox="0 0 120 64" aria-hidden="true">
+      <path d="M6 44c24-30 42-8 70-22" />
+      <path d="M64 14l18 8-16 14" />
+    </svg>
   );
 }
 
-function Sketch({ kind, locale }: { kind: string; locale: 'fr' | 'ar' }) {
+function InterfaceCard({
+  kind,
+  locale,
+  file,
+  ready,
+  preparing,
+}: {
+  kind: 'parent' | 'queue' | 'pin' | 'desk' | 'admin';
+  locale: 'fr' | 'ar';
+  file: string;
+  ready: string;
+  preparing: string;
+}) {
   const ar = locale === 'ar';
-  if (kind === 'parent') return <PhoneMock locale={locale} />;
-  if (kind === 'teacher') {
+  const klass = ar ? 'رياضيات' : 'Maths 4e';
+  if (kind === 'parent') {
     return (
-      <div className="mh-sketch queue" aria-hidden="true">
-        <span>{ar ? 'رياضيات' : 'Maths 4e'}</span>
-        <div><b>Amina</b><i>{ar ? 'جاهز' : 'Prêt'}</i></div>
-        <div><b>Youssef</b><i>{ar ? 'تحضير' : 'Préparation'}</i></div>
-      </div>
+      <article className="mh-card parent">
+        <p className="mh-mini">Wasli</p>
+        <strong>Amina</strong>
+        <span>{klass}</span>
+        <em className="mh-pill wait">{preparing}</em>
+        <b className="mh-card-action">{ar ? 'لقد وصلت' : 'Je suis arrivé'}</b>
+      </article>
+    );
+  }
+  if (kind === 'queue') {
+    return (
+      <article className="mh-card queue">
+        <p className="mh-mini">{file}</p>
+        <p className="mh-queue-class">{klass}</p>
+        <div className="mh-row"><span>Amina</span><span className="mh-pill">{ready}</span></div>
+        <div className="mh-row"><span>Youssef</span><span className="mh-pill wait">{preparing}</span></div>
+      </article>
     );
   }
   if (kind === 'desk') {
     return (
-      <div className="mh-sketch desk" aria-hidden="true">
-        <span>{ar ? 'بحث' : 'Recherche'}</span>
-        <b>{ar ? 'تحقق من الرمز' : 'Vérifier le code'}</b>
-      </div>
+      <article className="mh-card desk">
+        <p className="mh-mini">{ar ? 'الاستقبال' : 'Réception'}</p>
+        <span className="mh-search">{ar ? 'بحث' : 'Recherche'}</span>
+        <strong className="mh-dots">••••••</strong>
+        <b className="mh-card-action">{ar ? 'تأكيد التسليم' : 'Confirmer la remise'}</b>
+      </article>
     );
   }
-  const labels = ar ? ['تلاميذ', 'أولياء', 'أقسام'] : ['Élèves', 'Parents', 'Classes'];
+  if (kind === 'admin') {
+    const labels = ar ? ['تلاميذ', 'أولياء', 'أقسام'] : ['Élèves', 'Parents', 'Classes'];
+    return (
+      <article className="mh-card admin">
+        <p className="mh-mini">{ar ? 'الإدارة' : 'Administration'}</p>
+        {labels.map((label) => <div className="mh-row" key={label}><span>{label}</span><i /></div>)}
+      </article>
+    );
+  }
   return (
-    <div className="mh-sketch admin" aria-hidden="true">
-      {labels.map((label) => <span key={label}>{label}</span>)}
-    </div>
+    <article className="mh-card pin">
+      <p className="mh-mini">{ar ? 'الاستقبال' : 'Réception'}</p>
+      <strong className="mh-dots">••••••</strong>
+      <span>{ar ? 'تسليم مؤكد' : 'Remise sécurisée'}</span>
+    </article>
   );
 }
 
-function FeaturePreview({ index, locale }: { index: number; locale: 'fr' | 'ar' }) {
+function Sketch({
+  kind,
+  locale,
+  file,
+  ready,
+  preparing,
+}: {
+  kind: string;
+  locale: 'fr' | 'ar';
+  file: string;
+  ready: string;
+  preparing: string;
+}) {
+  const card = kind === 'teacher' ? 'queue' : kind === 'parent' ? 'parent' : kind === 'desk' ? 'desk' : 'admin';
+  const inner = <InterfaceCard kind={card} locale={locale} file={file} ready={ready} preparing={preparing} />;
+  if (kind === 'parent') return <div className="mh-phone" aria-hidden="true"><span className="mh-speaker" />{inner}</div>;
+  return <div aria-hidden="true">{inner}</div>;
+}
+
+function FeaturePreview({
+  index,
+  locale,
+  file,
+  ready,
+  preparing,
+}: {
+  index: number;
+  locale: 'fr' | 'ar';
+  file: string;
+  ready: string;
+  preparing: string;
+}) {
   const ar = locale === 'ar';
-  if (index === 0) {
-    return (
-      <div className="mh-preview queue" aria-hidden="true">
-        <p className="mh-mini">{ar ? 'الصف' : 'File'}</p>
-        <div><b>Amina</b><i>{ar ? 'جاهز' : 'Prêt'}</i></div>
-        <div><b>Youssef</b><i>{ar ? 'تحضير' : 'Préparation'}</i></div>
-      </div>
-    );
-  }
+  if (index === 0) return <div aria-hidden="true"><InterfaceCard kind="queue" locale={locale} file={file} ready={ready} preparing={preparing} /></div>;
   if (index === 1) {
     return (
       <div className="mh-preview steps" aria-hidden="true">
         <span>{ar ? 'طلب' : 'Demande'}</span>
         <span>{ar ? 'تحضير' : 'Préparation'}</span>
-        <span>{ar ? 'جاهز' : 'Prêt'}</span>
+        <span className="on">{ar ? 'جاهز' : 'Prêt'}</span>
       </div>
     );
   }
@@ -227,31 +276,13 @@ function FeaturePreview({ index, locale }: { index: number; locale: 'fr' | 'ar' 
       <div className="mh-preview chips" aria-hidden="true">
         <span>{ar ? 'تحضير' : 'Préparer'}</span>
         <span>{ar ? 'تأخير' : 'Retard'}</span>
-        <span>{ar ? 'جاهز' : 'Prêt'}</span>
+        <span className="on">{ar ? 'جاهز' : 'Prêt'}</span>
       </div>
     );
   }
-  if (index === 3) {
-    return (
-      <div className="mh-preview desk" aria-hidden="true">
-        <span>{ar ? 'بحث' : 'Recherche'}</span>
-        <b>{ar ? 'تأكيد التسليم' : 'Confirmer la remise'}</b>
-      </div>
-    );
-  }
-  if (index === 4) {
-    return (
-      <div className="mh-preview pin" aria-hidden="true">
-        <i /><i /><i /><i /><i /><i />
-      </div>
-    );
-  }
-  const labels = ar ? ['تلاميذ', 'أولياء'] : ['Élèves', 'Parents'];
-  return (
-    <div className="mh-preview lists" aria-hidden="true">
-      {labels.map((label) => <span key={label}>{label}</span>)}
-    </div>
-  );
+  if (index === 3) return <div aria-hidden="true"><InterfaceCard kind="desk" locale={locale} file={file} ready={ready} preparing={preparing} /></div>;
+  if (index === 4) return <div aria-hidden="true"><InterfaceCard kind="pin" locale={locale} file={file} ready={ready} preparing={preparing} /></div>;
+  return <div aria-hidden="true"><InterfaceCard kind="admin" locale={locale} file={file} ready={ready} preparing={preparing} /></div>;
 }
 
 function Icon({ name }: { name: number }) {
@@ -272,8 +303,16 @@ export function MarketingHome() {
     () => {
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       gsap.from('.mh-hero-title span', { y: 36, autoAlpha: 0, stagger: 0.08, duration: 0.7, ease: 'power3.out' });
-      gsap.from('.mh-card', { y: 22, autoAlpha: 0, stagger: 0.12, duration: 0.65, delay: 0.16, ease: 'power2.out' });
+      gsap.from('.mh-hero .mh-card', { y: 22, autoAlpha: 0, stagger: 0.12, duration: 0.65, delay: 0.16, ease: 'power2.out' });
       gsap.from('.mh-stamp, .mh-arrow, .mh-hero-foot', { autoAlpha: 0, y: 12, duration: 0.5, delay: 0.35, ease: 'power2.out' });
+      gsap.from('.mh-arrow path', { strokeDashoffset: 160, duration: 0.8, delay: 0.4, ease: 'power2.out' });
+      gsap.from('.mh-draw path', {
+        strokeDashoffset: 160,
+        duration: 0.8,
+        stagger: 0.12,
+        ease: 'power2.out',
+        scrollTrigger: { trigger: '.mh-flow', start: 'top 80%', once: true },
+      });
       gsap.to('.mh-drift', { y: -8, duration: 2.6, repeat: -1, yoyo: true, ease: 'sine.inOut', stagger: 0.2 });
       ScrollTrigger.batch('.mh-rise', {
         start: 'top 88%',
@@ -342,10 +381,13 @@ export function MarketingHome() {
               </article>
             </div>
             <svg className="mh-arrow" viewBox="0 0 140 90" aria-hidden="true">
-              <path d="M8 62c28-40 48-8 78-28" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-              <path d="M74 22l18 8-16 14" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M8 62c28-40 48-8 78-28" />
+              <path d="M74 22l18 8-16 14" />
             </svg>
-            <p className="mh-script">{text.note}</p>
+            <svg className="mh-arrow alt" viewBox="0 0 140 90" aria-hidden="true">
+              <path d="M12 24c22 28 46 8 78 22" />
+              <path d="M78 36l16 16-18 4" />
+            </svg>
             <p className="mh-stamp">Smart<br />pickup<br />system</p>
             <div className="mh-hero-foot">
               <p className="mh-lede">{text.lede}</p>
@@ -353,18 +395,47 @@ export function MarketingHome() {
                 <Link className="mh-btn solid" href="/register">{text.discover}</Link>
                 <a className="mh-btn line" href="#parcours">{text.howCta}</a>
               </div>
+              <p className="mh-caption">{text.caption}</p>
             </div>
-            <p className="mh-caption">{text.caption}</p>
           </div>
         </div>
       </section>
 
-      <div className="mh-wrap">
-        <section className="mh-why mh-rise" id="pourquoi">
-          <h2>{text.whyTitle}</h2>
+      <div className="mh-sheet">
+        <div className="mh-sheet-inner">
+        <section className="mh-flow">
+          {[
+            [locale === 'ar' ? 'يصل ولي الأمر.' : 'Le parent arrive.', text.steps[0][1]],
+            [locale === 'ar' ? 'يحضّر المعلم.' : "L'enseignant prépare.", text.steps[3][1]],
+            [locale === 'ar' ? 'يُؤكد التسليم.' : 'La remise est confirmée.', text.steps[4][1]],
+          ].map(([title, body], index) => (
+            <div className="mh-flow-slot" key={title}>
+              {index > 0 ? <Arrow /> : null}
+              <article className="mh-flow-item mh-rise">
+                <span className="mh-num">0{index + 1}</span>
+                <h3>{title}</h3>
+                <p>{body}</p>
+                <InterfaceCard
+                  kind={index === 0 ? 'parent' : index === 1 ? 'queue' : 'pin'}
+                  locale={locale}
+                  file={text.file}
+                  ready={text.ready}
+                  preparing={text.preparing}
+                />
+              </article>
+            </div>
+          ))}
+          <p className="mh-caption">{text.caption}</p>
+        </section>
+
+        <section className="mh-why" id="pourquoi">
+          <div className="mh-why-copy">
+            <h2>{text.whyTitle}</h2>
+            <p className="mh-script">{text.note}</p>
+          </div>
           <div className="mh-benefits">
             {text.why.map(([title, body], index) => (
-              <article key={title}>
+              <article className="mh-rise" key={title}>
                 <span className="mh-icon"><Icon name={index} /></span>
                 <h3>{title}</h3>
                 <p>{body}</p>
@@ -379,7 +450,7 @@ export function MarketingHome() {
           <div className="mh-explore">
             {text.products.map(([title, state, body, kind]) => (
               <article className={`mh-tile ${kind} mh-rise`} key={title}>
-                <Sketch kind={kind} locale={locale} />
+                <Sketch kind={kind} locale={locale} file={text.file} ready={text.ready} preparing={text.preparing} />
                 <div className="mh-tile-copy">
                   <span className={state === 'Partiel' || state === 'جزئي' ? 'mh-badge partial' : 'mh-badge'}>{state}</span>
                   <h3>{title}</h3>
@@ -396,8 +467,10 @@ export function MarketingHome() {
             {text.steps.map(([title, body], index) => (
               <li className="mh-rise" key={title}>
                 <strong>0{index + 1}</strong>
-                <h3>{title}</h3>
-                <p>{body}</p>
+                <div>
+                  <h3>{title}</h3>
+                  <p>{body}</p>
+                </div>
               </li>
             ))}
           </ol>
@@ -408,7 +481,7 @@ export function MarketingHome() {
           <div className="mh-feature-grid">
             {text.features.map(([title, state, body], index) => (
               <article className={`mh-feature f${index} mh-rise`} key={title}>
-                <FeaturePreview index={index} locale={locale} />
+                <FeaturePreview index={index} locale={locale} file={text.file} ready={text.ready} preparing={text.preparing} />
                 <div>
                   <span className={state === 'Partiel' || state === 'جزئي' ? 'mh-badge partial' : 'mh-badge'}>{state}</span>
                   <h3>{title}</h3>
@@ -432,12 +505,19 @@ export function MarketingHome() {
         </section>
 
         <section className="mh-close" id="contact">
-          <div>
-            <h2>{text.close}</h2>
+          <div className="mh-close-copy">
+            <h2 dir="ltr">
+              <span>Make Every</span>
+              <span className="lime">Pickup Simpler.</span>
+            </h2>
             <p>{text.closeText}</p>
             <p>{text.contactText}</p>
+            <Link className="mh-btn solid" href="/register">{text.cta}</Link>
           </div>
-          <Link className="mh-btn solid" href="/register">{text.cta}</Link>
+          <div className="mh-close-art" aria-hidden="true">
+            <div className="mh-tilt parent"><div className="mh-drift"><InterfaceCard kind="parent" locale={locale} file={text.file} ready={text.ready} preparing={text.preparing} /></div></div>
+            <div className="mh-tilt pin"><div className="mh-drift"><InterfaceCard kind="pin" locale={locale} file={text.file} ready={text.ready} preparing={text.preparing} /></div></div>
+          </div>
         </section>
 
         <footer className="mh-foot">
@@ -453,6 +533,7 @@ export function MarketingHome() {
           </nav>
           <button className="mh-btn line" type="button" onClick={() => setLocale(locale === 'fr' ? 'ar' : 'fr')}>{text.lang}</button>
         </footer>
+        </div>
       </div>
     </main>
   );
