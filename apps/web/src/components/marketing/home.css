@@ -73,6 +73,9 @@
   min-height: calc(100svh - 72px - 56px);
   padding: 0 0 8px;
 }
+@media (min-width: 1101px) {
+  .mh-hero-stage { transform: translateY(12px); }
+}
 .mh-hero-title {
   position: relative; z-index: 1; width: 100%; margin: 0 0 28px; text-align: center;
   font-size: clamp(3rem, 8.8vw, 7.6rem); line-height: 0.82;
@@ -106,7 +109,7 @@
 .mh-dots { letter-spacing: 0.22em; font-size: 1.2rem; }
 .mh-search { border-radius: 12px; background: white; padding: 8px 10px; color: #8b93a7; }
 .mh-arrow, .mh-draw { color: var(--lime); overflow: visible; }
-.mh-hero .mh-tilt.parent { inset-inline-end: 28px; inset-inline-start: auto; top: 4%; bottom: auto; transform: rotate(-7deg); }
+.mh-hero .mh-tilt.parent { inset-inline-end: 28px; inset-inline-start: auto; top: calc(4% + 22px); bottom: auto; transform: rotate(-7deg); }
 .mh-hero .mh-tilt.queue { inset-inline-start: -18px; inset-inline-end: auto; top: 32%; bottom: auto; transform: rotate(6deg); }
 .mh-hero .mh-tilt.pin { inset-inline-end: 64px; inset-inline-start: auto; top: auto; bottom: 7%; transform: rotate(-5deg); }
 .mh-hero .mh-tilt.parent .mh-card { width: 214px; }
@@ -324,7 +327,7 @@
   .mh-menu { display: block; }
   .mh-hero-stage {
     min-height: 0; display: flex; flex-direction: column; align-items: center; align-content: start;
-    justify-content: flex-start; gap: 16px; padding: 28px 0 8px;
+    justify-content: flex-start; gap: 16px; padding: 46px 0 8px;
   }
   .mh-hero-title { font-size: clamp(2.2rem, 11vw, 3.6rem); margin-bottom: 4px; }
   .mh-hero .mh-tilt.parent, .mh-hero .mh-tilt.queue, .mh-hero .mh-tilt.pin,
@@ -353,6 +356,7 @@
   }
   .mh-tile.parent .mh-phone, .mh-tile.parent .mh-tile-copy { grid-column: auto; grid-row: auto; }
   .mh-flow .mh-draw { position: static; display: block; margin: 0 auto; transform: rotate(90deg); }
+  .mh-hero-stage { padding-top: 40px; }
   .mh-hero-title { font-size: clamp(2.15rem, 10.6vw, 2.9rem); }
   .mh-steps li, .mh-steps li:nth-child(even) { grid-template-columns: 58px 1fr; padding-inline-start: 0; }
   .mh-close { min-height: 0; padding: 28px 18px; }
