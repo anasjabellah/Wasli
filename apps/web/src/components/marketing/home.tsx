@@ -710,8 +710,8 @@ export function MarketingHome() {
         <section className="mh-block" id="centres">
           <h2>{text.centersTitle}</h2>
           <div className="mh-roles">
-            {text.centers.map(([title, body]) => (
-              <article className="mh-rise" key={title}>
+            {text.centers.map(([title, body], index) => (
+              <article className={`mh-role r${index} mh-rise`} key={title}>
                 <h3>{title}</h3>
                 <p>{body}</p>
               </article>
