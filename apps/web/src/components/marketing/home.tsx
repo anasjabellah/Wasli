@@ -344,28 +344,75 @@ function FeaturePreview({
   preparing: string;
 }) {
   const ar = locale === 'ar';
-  if (index === 0) return <div aria-hidden="true"><InterfaceCard kind="queue" locale={locale} file={file} ready={ready} preparing={preparing} /></div>;
-  if (index === 1) {
+  const klass = ar ? 'رياضيات' : 'Maths 4e';
+  if (index === 0) {
     return (
-      <div className="mh-preview steps" aria-hidden="true">
-        <span>{ar ? 'طلب' : 'Demande'}</span>
-        <span>{ar ? 'تحضير' : 'Préparation'}</span>
-        <span className="on">{ar ? 'جاهز' : 'Prêt'}</span>
+      <article className="mh-feat-ui" aria-hidden="true">
+        <header className="mh-feat-top"><span>{file}</span><b>2</b></header>
+        <p className="mh-feat-row"><i>A</i><span>Amina<small>{klass}</small></span><em className="on">{ready}</em></p>
+        <p className="mh-feat-row"><i className="alt">Y</i><span>Youssef<small>{klass}</small></span><em>{preparing}</em></p>
+      </article>
+    );
+  }
+  if (index === 1) {
+    const steps: Array<[string, string, string]> = ar
+      ? [['طلب مستلم', 'مستلم', 'done'], ['التحضير جارٍ', 'جارٍ', 'done'], ['التلميذ جاهز', 'نشط', 'on']]
+      : [['Demande reçue', 'Reçue', 'done'], ['Préparation en cours', 'En cours', 'done'], ['Élève prêt', 'Actif', 'on']];
+    return (
+      <div className="mh-feat-time" aria-hidden="true">
+        <span className="mh-feat-line" />
+        {steps.map(([label, state, mark]) => (
+          <p className={mark} key={label}><i /><span>{label}</span><small>{state}</small></p>
+        ))}
       </div>
     );
   }
   if (index === 2) {
     return (
-      <div className="mh-preview chips" aria-hidden="true">
-        <span>{ar ? 'تحضير' : 'Préparer'}</span>
-        <span>{ar ? 'تأخير' : 'Retard'}</span>
-        <span className="on">{ar ? 'جاهز' : 'Prêt'}</span>
+      <article className="mh-feat-board" aria-hidden="true">
+        <p className="mh-feat-student"><i>A</i><span>Amina<small>{klass}</small></span><em className="on">{ready}</em></p>
+        <div className="mh-feat-actions">
+          <span>{ar ? 'تحضير' : 'Préparer'}</span>
+          <span>{ar ? 'تأخير' : 'Retard'}</span>
+          <span className="on">{ar ? 'جاهز' : 'Prêt'}</span>
+        </div>
+      </article>
+    );
+  }
+  if (index === 3) {
+    return (
+      <article className="mh-feat-ui" aria-hidden="true">
+        <header className="mh-feat-top"><span>{ar ? 'الاستقبال' : 'Réception'}</span></header>
+        <span className="mh-feat-search">{ar ? 'بحث' : 'Recherche'}</span>
+        <strong className="mh-feat-dots">••••••</strong>
+        <b className="mh-feat-action">{ar ? 'تأكيد التسليم' : 'Confirmer la remise'}</b>
+      </article>
+    );
+  }
+  if (index === 4) {
+    return (
+      <div className="mh-feat-otp" aria-hidden="true">
+        <header className="mh-feat-otp-top">
+          <i>
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5l5 2v4.2c0 3.2-2 5.2-5 6.3-3-1.1-5-3.1-5-6.3V3.5z" /></svg>
+          </i>
+          <span>{ar ? 'الاستقبال' : 'Réception'}</span>
+        </header>
+        <p className="mh-feat-otp-label">{ar ? 'رمز التسليم' : 'Code de remise'}</p>
+        <div className="mh-feat-digits" dir="ltr">
+          {Array.from({ length: 6 }, (_, digit) => <b className="mh-feat-digit" key={digit} />)}
+        </div>
+        <p className="mh-feat-otp-state">{ar ? 'تحقق عند الاستقبال' : 'Contrôle à la réception'}</p>
+        <b className="mh-feat-action">{ar ? 'تأكيد التسليم' : 'Confirmer la remise'}</b>
       </div>
     );
   }
-  if (index === 3) return <div aria-hidden="true"><InterfaceCard kind="desk" locale={locale} file={file} ready={ready} preparing={preparing} /></div>;
-  if (index === 4) return <div aria-hidden="true"><InterfaceCard kind="pin" locale={locale} file={file} ready={ready} preparing={preparing} /></div>;
-  return <div aria-hidden="true"><InterfaceCard kind="admin" locale={locale} file={file} ready={ready} preparing={preparing} /></div>;
+  const labels = ar ? ['تلاميذ', 'أولياء', 'أقسام'] : ['Élèves', 'Parents', 'Classes'];
+  return (
+    <div className="mh-feat-list" aria-hidden="true">
+      {labels.map((label) => <p key={label}><span>{label}</span><i /></p>)}
+    </div>
+  );
 }
 
 function Icon({ name }: { name: number }) {
@@ -417,6 +464,35 @@ export function MarketingHome() {
         start: 'top 88%',
         once: true,
         onEnter: (batch) => gsap.from(batch, { y: 24, autoAlpha: 0, stagger: 0.08, duration: 0.5, ease: 'power2.out' }),
+      });
+      const featureEnter = { start: 'top 80%', once: true };
+      gsap.from('.mh-feat-line', {
+        scaleY: 0,
+        duration: 0.55,
+        ease: 'power2.out',
+        scrollTrigger: { trigger: '.mh-feature.f1', ...featureEnter },
+      });
+      gsap.from('.mh-feat-time p', {
+        autoAlpha: 0,
+        y: 8,
+        stagger: 0.1,
+        duration: 0.4,
+        ease: 'power2.out',
+        scrollTrigger: { trigger: '.mh-feature.f1', ...featureEnter },
+      });
+      gsap.from('.mh-feat-board .on', {
+        autoAlpha: 0.4,
+        duration: 0.45,
+        ease: 'power2.out',
+        scrollTrigger: { trigger: '.mh-feature.f2', ...featureEnter },
+      });
+      gsap.from('.mh-feat-digit', {
+        autoAlpha: 0,
+        y: 6,
+        stagger: 0.05,
+        duration: 0.32,
+        ease: 'power2.out',
+        scrollTrigger: { trigger: '.mh-feature.f4', ...featureEnter },
       });
     },
     { scope: root, dependencies: [locale], revertOnUpdate: true },
@@ -621,7 +697,7 @@ export function MarketingHome() {
             {text.features.map(([title, state, body], index) => (
               <article className={`mh-feature f${index} mh-rise`} key={title}>
                 <FeaturePreview index={index} locale={locale} file={text.file} ready={text.ready} preparing={text.preparing} />
-                <div>
+                <div className="mh-feat-copy">
                   <span className={state === 'Partiel' || state === 'جزئي' ? 'mh-badge partial' : 'mh-badge'}>{state}</span>
                   <h3>{title}</h3>
                   <p>{body}</p>
