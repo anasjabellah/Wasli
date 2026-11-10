@@ -7,7 +7,7 @@ type HealthState = 'checking' | 'up' | 'down';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
-export function ApiStatus() {
+export function ApiStatus({ locale = 'fr' }: { locale?: 'fr' | 'ar' }) {
   const [state, setState] = useState<HealthState>('checking');
 
   useEffect(() => {
@@ -24,8 +24,8 @@ export function ApiStatus() {
     return () => controller.abort();
   }, []);
 
-  const label =
-    state === 'checking' ? 'Vérification…' : state === 'up' ? shellCopy.fr.apiUp : shellCopy.fr.apiDown;
+  const copy = shellCopy[locale];
+  const label = state === 'checking' ? (locale === 'ar' ? 'جارٍ التحقق…' : 'Vérification…') : state === 'up' ? copy.apiUp : copy.apiDown;
 
   return (
     <p className={state === 'up' ? 'status up' : 'status'}>

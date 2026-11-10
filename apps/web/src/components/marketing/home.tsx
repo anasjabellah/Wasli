@@ -81,6 +81,11 @@ const copy = {
     footerNote: 'Récupération des élèves pour les centres de soutien.',
     privacy: 'Confidentialité',
     terms: 'Conditions',
+    footProduct: 'Produit',
+    footCompany: 'Société',
+    footLegal: 'Légal',
+    footLang: 'Langue',
+    footStatement: 'La sortie des élèves, dans une seule file.',
   },
   ar: {
     dir: 'rtl' as const,
@@ -152,6 +157,11 @@ const copy = {
     footerNote: 'استلام التلاميذ لمراكز الدعم.',
     privacy: 'الخصوصية',
     terms: 'الشروط',
+    footProduct: 'المنتج',
+    footCompany: 'الشركة',
+    footLegal: 'قانوني',
+    footLang: 'اللغة',
+    footStatement: 'خروج التلاميذ في صف واحد.',
   },
 };
 
@@ -737,17 +747,36 @@ export function MarketingHome() {
         </section>
 
         <footer className="mh-foot">
-          <div>
-            <Link href="/" className="mh-brand"><span className="mh-mark">W</span> Wasli</Link>
-            <p>{text.footerNote}</p>
-            <ApiStatus />
+          <div className="mh-foot-main">
+            <div className="mh-foot-brand">
+              <Link href="/" className="mh-brand"><span className="mh-mark">W</span> Wasli</Link>
+              <p>{text.footerNote}</p>
+              <ApiStatus locale={locale} />
+            </div>
+            <nav className="mh-foot-nav" aria-label="Wasli">
+              <div className="mh-foot-group">
+                <p className="mh-foot-label">{text.footProduct}</p>
+                {text.links.slice(0, 3).map(([label, href]) => <a key={href} href={href}>{label}</a>)}
+              </div>
+              <div className="mh-foot-group">
+                <p className="mh-foot-label">{text.footCompany}</p>
+                {text.links.slice(3).map(([label, href]) => <a key={href} href={href}>{label}</a>)}
+              </div>
+              <div className="mh-foot-group">
+                <p className="mh-foot-label">{text.footLegal}</p>
+                <Link href="/privacy">{text.privacy}</Link>
+                <Link href="/terms">{text.terms}</Link>
+              </div>
+              <div className="mh-foot-group mh-foot-lang">
+                <p className="mh-foot-label">{text.footLang}</p>
+                <button type="button" onClick={() => setLocale(locale === 'fr' ? 'ar' : 'fr')}>{text.lang}</button>
+              </div>
+            </nav>
           </div>
-          <nav aria-label="Wasli">
-            {text.links.map(([label, href]) => <a key={href} href={href}>{label}</a>)}
-            <Link href="/privacy">{text.privacy}</Link>
-            <Link href="/terms">{text.terms}</Link>
-          </nav>
-          <button className="mh-btn line" type="button" onClick={() => setLocale(locale === 'fr' ? 'ar' : 'fr')}>{text.lang}</button>
+          <div className="mh-foot-bar">
+            <p>© 2026 Wasli.</p>
+            <p>{text.footStatement}</p>
+          </div>
         </footer>
         </div>
       </div>
