@@ -2,17 +2,30 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { login, registerCenter, writeSession, type ApiError } from '@/lib/api';
+import '../auth.css';
 
 const copy = {
   fr: {
     dir: 'ltr' as const,
     lang: 'العربية',
+    account: 'Déjà un compte ?',
+    login: 'Se connecter',
+    headline: 'Votre centre, mieux organisé.',
+    support: 'Centralisez vos élèves, vos équipes et la sortie des enfants avec Wasli.',
+    caption: 'Aperçu d’interface. Les prénoms sont des exemples.',
+    file: 'File',
+    ready: 'Prêt',
+    preparing: 'Préparation',
+    klass: 'Maths 4e',
+    pickup: 'Sortie',
+    pickupBody: 'Amina est prête',
+    kicker: 'Inscription',
     title: 'Ouvrir un centre',
-    lede: 'Le centre est activé dès l’inscription, puis le tableau de bord s’ouvre.',
-    center: 'Le centre',
-    admin: 'L’administrateur',
+    lede: 'Créez votre espace Wasli en quelques étapes.',
+    stepCenter: 'Informations du centre',
+    stepAdmin: 'Administrateur',
     name: 'Nom du centre',
     centerEmail: 'E-mail du centre',
     phone: 'Téléphone',
@@ -24,18 +37,38 @@ const copy = {
     adminPhone: 'Téléphone (optionnel)',
     password: 'Mot de passe',
     confirm: 'Confirmer le mot de passe',
-    submit: 'Créer le centre',
+    continue: 'Continuer',
+    back: 'Retour',
+    submit: 'Créer mon centre',
     sending: 'Création…',
+    note: 'Le compte administrateur est créé avec le centre. Le centre est activé dès l’inscription, puis le tableau de bord s’ouvre.',
+    requiredField: 'Ce champ est obligatoire.',
+    emailInvalid: 'Adresse e-mail invalide.',
+    phoneShort: 'Indiquez au moins 8 caractères.',
+    tooLong: 'Texte trop long.',
+    passwordShort: 'Le mot de passe compte au moins 8 caractères.',
     mismatch: 'Les mots de passe ne correspondent pas.',
-    required: 'Remplissez les champs obligatoires. Le mot de passe compte au moins 8 caractères.',
+    failed: 'Création impossible.',
   },
   ar: {
     dir: 'rtl' as const,
     lang: 'Français',
+    account: 'لديك حساب؟',
+    login: 'دخول',
+    headline: 'مركزك، بتنظيم أفضل.',
+    support: 'اجمع تلاميذك وفرقك وخروج الأطفال في Wasli.',
+    caption: 'معاينة للواجهة. الأسماء أمثلة.',
+    file: 'الصف',
+    ready: 'جاهز',
+    preparing: 'تحضير',
+    klass: 'رياضيات',
+    pickup: 'خروج',
+    pickupBody: 'أمينة جاهزة',
+    kicker: 'تسجيل',
     title: 'فتح مركز',
-    lede: 'يُفعَّل المركز فور التسجيل، ثم تُفتح لوحة المدير.',
-    center: 'المركز',
-    admin: 'المدير',
+    lede: 'أنشئ فضاء Wasli في خطوات قليلة.',
+    stepCenter: 'معلومات المركز',
+    stepAdmin: 'المدير',
     name: 'اسم المركز',
     centerEmail: 'بريد المركز',
     phone: 'الهاتف',
@@ -47,12 +80,57 @@ const copy = {
     adminPhone: 'الهاتف (اختياري)',
     password: 'كلمة السر',
     confirm: 'تأكيد كلمة السر',
-    submit: 'إنشاء المركز',
+    continue: 'متابعة',
+    back: 'رجوع',
+    submit: 'أنشئ مركزي',
     sending: 'جارٍ الإنشاء…',
+    note: 'يُنشأ حساب المدير مع المركز. يُفعَّل المركز فور التسجيل، ثم تُفتح لوحة المدير.',
+    requiredField: 'هذا الحقل إلزامي.',
+    emailInvalid: 'البريد غير صالح.',
+    phoneShort: '8 أحرف على الأقل.',
+    tooLong: 'النص طويل جدًا.',
+    passwordShort: 'كلمة السر من 8 أحرف على الأقل.',
     mismatch: 'كلمتا السر غير متطابقتين.',
-    required: 'املأ الحقول الإلزامية. كلمة السر من 8 أحرف على الأقل.',
+    failed: 'تعذر الإنشاء.',
   },
 };
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+type Reason = 'required' | 'email' | 'phone' | 'long' | 'password' | 'mismatch';
+type IssueMap = Partial<Record<keyof Fields, Reason>>;
+
+function bounded(value: string, min: number, max: number): Reason | null {
+  const length = value.trim().length;
+  if (length < min) return 'required';
+  if (length > max) return 'long';
+  return null;
+}
+
+function emailIssue(value: string): Reason | null {
+  const length = value.trim().length;
+  if (length < 1) return 'required';
+  if (length > 160 || !emailPattern.test(value.trim())) return 'email';
+  return null;
+}
+
+function phoneIssue(value: string, required: boolean): Reason | null {
+  const length = value.trim().length;
+  if (length === 0) return required ? 'required' : null;
+  if (length < 8) return 'phone';
+  if (length > 30) return 'long';
+  return null;
+}
+
+function issueText(reason: Reason | undefined, text: (typeof copy)[keyof typeof copy]): string | undefined {
+  if (reason === 'required') return text.requiredField;
+  if (reason === 'email') return text.emailInvalid;
+  if (reason === 'phone') return text.phoneShort;
+  if (reason === 'long') return text.tooLong;
+  if (reason === 'password') return text.passwordShort;
+  if (reason === 'mismatch') return text.mismatch;
+  return undefined;
+}
 
 type Fields = {
   centerName: string;
@@ -82,28 +160,111 @@ const empty: Fields = {
   confirmPassword: '',
 };
 
+function Field({
+  label, value, onChange, message, type = 'text', autoComplete, span = false, dir,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  message?: string;
+  type?: string;
+  autoComplete?: string;
+  span?: boolean;
+  dir?: 'ltr';
+}) {
+  return (
+    <label className={span ? 'ax-span' : undefined}>
+      {label}
+      <input
+        className={message ? 'ax-field invalid' : 'ax-field'}
+        type={type}
+        dir={dir}
+        value={value}
+        autoComplete={autoComplete}
+        aria-invalid={message ? true : undefined}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      {message ? <small className="ax-hint">{message}</small> : null}
+    </label>
+  );
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const [locale, setLocale] = useState<keyof typeof copy>('fr');
   const text = copy[locale];
   const [fields, setFields] = useState<Fields>(empty);
+  const [step, setStep] = useState<1 | 2>(1);
+  const [issues, setIssues] = useState<IssueMap>({});
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const pendingRef = useRef(false);
 
   function set(key: keyof Fields, value: string): void {
     setFields((current) => ({ ...current, [key]: value }));
+    setIssues((current) => {
+      if (!current[key] && key !== 'password') return current;
+      const next = { ...current };
+      delete next[key];
+      if (key === 'password') delete next.confirmPassword;
+      return next;
+    });
+    setError(null);
+  }
+
+  function centerIssues(): IssueMap {
+    return {
+      centerName: bounded(fields.centerName, 2, 120) ?? undefined,
+      centerEmail: emailIssue(fields.centerEmail) ?? undefined,
+      centerPhone: phoneIssue(fields.centerPhone, true) ?? undefined,
+      city: bounded(fields.city, 2, 80) ?? undefined,
+      addressLine: fields.addressLine.trim().length > 180 ? 'long' : undefined,
+    };
+  }
+
+  function adminIssues(): IssueMap {
+    const password: Reason | undefined = fields.password.length < 8 ? 'password' : fields.password.length > 128 ? 'long' : undefined;
+    const confirm: Reason | undefined = fields.confirmPassword.length < 8
+      ? 'password'
+      : fields.confirmPassword.length > 128
+        ? 'long'
+        : fields.password !== fields.confirmPassword
+          ? 'mismatch'
+          : undefined;
+    return {
+      firstName: bounded(fields.firstName, 1, 80) ?? undefined,
+      lastName: bounded(fields.lastName, 1, 80) ?? undefined,
+      email: emailIssue(fields.email) ?? undefined,
+      phone: phoneIssue(fields.phone, false) ?? undefined,
+      password,
+      confirmPassword: confirm,
+    };
+  }
+
+  function filled(map: IssueMap): IssueMap {
+    return Object.fromEntries(Object.entries(map).filter((entry) => entry[1])) as IssueMap;
+  }
+
+  function next(): void {
+    const problems = filled(centerIssues());
+    setIssues(problems);
+    if (Object.keys(problems).length > 0) return;
+    setError(null);
+    setStep(2);
   }
 
   async function submit(): Promise<void> {
-    const required = [fields.centerName, fields.centerEmail, fields.centerPhone, fields.city, fields.firstName, fields.lastName, fields.email];
-    if (required.some((value) => value.trim().length < 2) || fields.password.length < 8) {
-      setError(text.required);
+    if (pendingRef.current) return;
+    const center = filled(centerIssues());
+    if (Object.keys(center).length > 0) {
+      setIssues(center);
+      setStep(1);
       return;
     }
-    if (fields.password !== fields.confirmPassword) {
-      setError(text.mismatch);
-      return;
-    }
+    const admin = filled(adminIssues());
+    setIssues(admin);
+    if (Object.keys(admin).length > 0) return;
+    pendingRef.current = true;
     setPending(true);
     setError(null);
     try {
@@ -126,41 +287,97 @@ export default function RegisterPage() {
       router.push('/app');
     } catch (caught) {
       const failure = caught as ApiError;
-      setError(failure instanceof Error ? failure.message : text.required);
+      setError(failure instanceof Error ? failure.message : text.failed);
+      pendingRef.current = false;
       setPending(false);
     }
   }
 
   return (
-    <main className={text.dir === 'rtl' ? 'wrap rtl' : 'wrap'} lang={locale} dir={text.dir} style={{ paddingTop: 36, paddingBottom: 64 }}>
-      <header className="nav">
-        <Link href="/" className="brand"><span className="mark">W</span> Wasli</Link>
-        <button className="btn ghost" type="button" onClick={() => { setLocale(locale === 'fr' ? 'ar' : 'fr'); setError(null); }}>{text.lang}</button>
-      </header>
-        <section className="stack">
-          <div>
-            <p className="kicker">Wasli</p>
-            <h1>{text.title}</h1>
-            <p className="lede">{text.lede}</p>
+    <main className={text.dir === 'rtl' ? 'ax ax-split rtl' : 'ax ax-split'} lang={locale} dir={text.dir}>
+      <aside className="ax-brand">
+        <div className="ax-brand-top">
+          <Link href="/" className="ax-logo"><span className="ax-mark">W</span> Wasli</Link>
+          <button className="ax-lang" type="button" onClick={() => { setLocale(locale === 'fr' ? 'ar' : 'fr'); setError(null); }}>{text.lang}</button>
+        </div>
+        <div className="ax-brand-body">
+        <div className="ax-brand-copy">
+          <h1>{text.headline}</h1>
+          <p>{text.support}</p>
+        </div>
+        <div className="ax-stage" aria-hidden="true">
+          <article className="ax-queue">
+            <header><span>{text.file}</span><b>2</b></header>
+            <p className="ax-queue-class">{text.klass}</p>
+            <p className="ax-queue-row"><i>A</i><span>Amina<small>{text.klass}</small></span><em className="on">{text.ready}</em></p>
+            <p className="ax-queue-row"><i className="alt">Y</i><span>Youssef<small>{text.klass}</small></span><em>{text.preparing}</em></p>
+          </article>
+          <p className="ax-chip"><i />Amina · {text.ready}</p>
+          <article className="ax-pickup">
+            <p>{text.pickup}</p>
+            <strong>{text.pickupBody}</strong>
+            <span>{text.klass}</span>
+          </article>
+        </div>
+        <p className="ax-caption">{text.caption}</p>
+        </div>
+      </aside>
+      <section className="ax-pane">
+        <form
+          className="ax-onboard"
+          noValidate
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (step === 1) next();
+            else void submit();
+          }}
+        >
+          <div className="ax-onboard-head">
+            <p className="ax-kicker ax-onboard-kicker">{text.kicker}</p>
+            <p className="ax-account">{text.account} <Link href="/login">{text.login}</Link></p>
           </div>
-          <form className="card stack" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
-            <h2>{text.center}</h2>
-            <label>{text.name}<input className="field" value={fields.centerName} onChange={(event) => set('centerName', event.target.value)} /></label>
-            <label>{text.centerEmail}<input className="field" type="email" value={fields.centerEmail} onChange={(event) => set('centerEmail', event.target.value)} /></label>
-            <label>{text.phone}<input className="field" value={fields.centerPhone} onChange={(event) => set('centerPhone', event.target.value)} /></label>
-            <label>{text.city}<input className="field" value={fields.city} onChange={(event) => set('city', event.target.value)} /></label>
-            <label>{text.address}<input className="field" value={fields.addressLine} onChange={(event) => set('addressLine', event.target.value)} /></label>
-            <h2>{text.admin}</h2>
-            <label>{text.first}<input className="field" value={fields.firstName} onChange={(event) => set('firstName', event.target.value)} /></label>
-            <label>{text.last}<input className="field" value={fields.lastName} onChange={(event) => set('lastName', event.target.value)} /></label>
-            <label>{text.email}<input className="field" type="email" value={fields.email} onChange={(event) => set('email', event.target.value)} /></label>
-            <label>{text.adminPhone}<input className="field" value={fields.phone} onChange={(event) => set('phone', event.target.value)} /></label>
-            <label>{text.password}<input className="field" type="password" value={fields.password} onChange={(event) => set('password', event.target.value)} autoComplete="new-password" /></label>
-            <label>{text.confirm}<input className="field" type="password" value={fields.confirmPassword} onChange={(event) => set('confirmPassword', event.target.value)} autoComplete="new-password" /></label>
-            {error ? <p className="error">{error}</p> : null}
-            <button className="btn primary" type="submit" disabled={pending}>{pending ? text.sending : text.submit}</button>
-          </form>
-        </section>
+          <h2>{text.title}</h2>
+          <p className="ax-onboard-lede">{text.lede}</p>
+          <ol className="ax-steps" data-step={step}>
+            <li className={step === 1 ? 'current' : 'done'}>
+              <button type="button" aria-current={step === 1 ? 'step' : undefined} onClick={() => { setError(null); setIssues({}); setStep(1); }}>
+                <span>01</span>
+                {text.stepCenter}
+              </button>
+            </li>
+            <li className={step === 2 ? 'current' : 'upcoming'}>
+              <button type="button" aria-current={step === 2 ? 'step' : undefined} disabled={step === 1} onClick={next}>
+                <span>02</span>
+                {text.stepAdmin}
+              </button>
+            </li>
+          </ol>
+          <div className="ax-step-body" key={step}>
+          {step === 1 ? (
+            <div className="ax-fields">
+              <Field span label={text.name} value={fields.centerName} message={issueText(issues.centerName, text)} onChange={(value) => set('centerName', value)} />
+              <Field label={text.centerEmail} type="email" dir="ltr" value={fields.centerEmail} message={issueText(issues.centerEmail, text)} onChange={(value) => set('centerEmail', value)} />
+              <Field label={text.phone} dir="ltr" value={fields.centerPhone} message={issueText(issues.centerPhone, text)} onChange={(value) => set('centerPhone', value)} />
+              <Field label={text.city} value={fields.city} message={issueText(issues.city, text)} onChange={(value) => set('city', value)} />
+              <Field label={text.address} value={fields.addressLine} message={issueText(issues.addressLine, text)} onChange={(value) => set('addressLine', value)} />
+            </div>
+          ) : (
+            <div className="ax-fields">
+              <Field label={text.first} value={fields.firstName} message={issueText(issues.firstName, text)} autoComplete="given-name" onChange={(value) => set('firstName', value)} />
+              <Field label={text.last} value={fields.lastName} message={issueText(issues.lastName, text)} autoComplete="family-name" onChange={(value) => set('lastName', value)} />
+              <Field label={text.email} type="email" dir="ltr" value={fields.email} message={issueText(issues.email, text)} autoComplete="username" onChange={(value) => set('email', value)} />
+              <Field label={text.adminPhone} dir="ltr" value={fields.phone} message={issueText(issues.phone, text)} onChange={(value) => set('phone', value)} />
+              <Field label={text.password} type="password" dir="ltr" value={fields.password} message={issueText(issues.password, text)} autoComplete="new-password" onChange={(value) => set('password', value)} />
+              <Field label={text.confirm} type="password" dir="ltr" value={fields.confirmPassword} message={issueText(issues.confirmPassword, text)} autoComplete="new-password" onChange={(value) => set('confirmPassword', value)} />
+            </div>
+          )}
+          </div>
+          {error ? <p className="ax-error" role="alert">{error}</p> : null}
+          <button className="ax-btn" type="submit" disabled={pending}>{pending ? text.sending : step === 1 ? text.continue : text.submit}</button>
+          {step === 2 ? <button className="ax-back" type="button" onClick={() => { setError(null); setIssues({}); setStep(1); }}>{text.back}</button> : null}
+          {step === 2 ? <p className="ax-note">{text.note}</p> : null}
+        </form>
+      </section>
     </main>
   );
 }
