@@ -283,10 +283,51 @@ function Sketch({
   ready: string;
   preparing: string;
 }) {
-  const card = kind === 'teacher' ? 'queue' : kind === 'parent' ? 'parent' : kind === 'desk' ? 'desk' : 'admin';
-  const inner = <InterfaceCard kind={card} locale={locale} file={file} ready={ready} preparing={preparing} />;
-  if (kind === 'parent') return <div className="mh-phone" aria-hidden="true"><span className="mh-speaker" />{inner}</div>;
-  return <div aria-hidden="true">{inner}</div>;
+  const ar = locale === 'ar';
+  const klass = ar ? 'رياضيات' : 'Maths 4e';
+  if (kind === 'parent') {
+    return (
+      <div className="mh-phone-stage" aria-hidden="true">
+        <span className="mh-orb" />
+        <span className="mh-orb alt" />
+        <div className="mh-phone">
+          <span className="mh-speaker" />
+          <article className="mh-show parent">
+            <header className="mh-show-top"><span className="mh-show-mark">W</span> Wasli</header>
+            <p className="mh-show-person"><strong>Amina</strong><small>{klass}</small></p>
+            <em className="mh-show-pill">{preparing}</em>
+            <b className="mh-show-action">{ar ? 'لقد وصلت' : 'Je suis arrivé'}</b>
+          </article>
+        </div>
+      </div>
+    );
+  }
+  if (kind === 'teacher') {
+    return (
+      <article className="mh-show queue" aria-hidden="true">
+        <header className="mh-show-top"><span>{file}</span><b className="mh-show-count">2</b></header>
+        <p className="mh-show-row"><i>A</i><span>Amina<small>{klass}</small></span><em className="on">{ready}</em></p>
+        <p className="mh-show-row"><i className="alt">Y</i><span>Youssef<small>{klass}</small></span><em>{preparing}</em></p>
+      </article>
+    );
+  }
+  if (kind === 'desk') {
+    return (
+      <article className="mh-show desk" aria-hidden="true">
+        <header className="mh-show-top"><span>{ar ? 'الاستقبال' : 'Réception'}</span></header>
+        <span className="mh-show-search">{ar ? 'بحث' : 'Recherche'}</span>
+        <strong className="mh-show-code">••••••</strong>
+        <b className="mh-show-action">{ar ? 'تأكيد التسليم' : 'Confirmer la remise'}</b>
+      </article>
+    );
+  }
+  const labels = ar ? ['تلاميذ', 'أولياء', 'أقسام'] : ['Élèves', 'Parents', 'Classes'];
+  return (
+    <article className="mh-show admin" aria-hidden="true">
+      <header className="mh-show-top"><span>{ar ? 'الإدارة' : 'Administration'}</span></header>
+      {labels.map((label) => <p className="mh-show-row" key={label}><span>{label}</span><i /></p>)}
+    </article>
+  );
 }
 
 function FeaturePreview({
@@ -526,10 +567,15 @@ export function MarketingHome() {
           </div>
           <div className="mh-benefits">
             {text.why.map(([title, body], index) => (
-              <article className="mh-rise" key={title}>
-                <span className="mh-icon"><Icon name={index} /></span>
-                <h3>{title}</h3>
-                <p>{body}</p>
+              <article className={`mh-benefit n${index} mh-rise`} key={title}>
+                <div className="mh-benefit-mark">
+                  <span className="mh-benefit-index">0{index + 1}</span>
+                  <span className="mh-icon" aria-hidden="true"><Icon name={index} /></span>
+                </div>
+                <div className="mh-benefit-copy">
+                  <h3>{title}</h3>
+                  <p>{body}</p>
+                </div>
               </article>
             ))}
           </div>
