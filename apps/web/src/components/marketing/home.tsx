@@ -723,7 +723,8 @@ export function MarketingHome() {
           <div className="mh-close-copy">
             <h2 dir="ltr">
               <span>Make Every</span>
-              <span className="lime">Pickup Simpler.</span>
+              <span className="lime">Pickup</span>
+              <span className="lime">Simpler.</span>
             </h2>
             <p>{text.closeText}</p>
             <p>{text.contactText}</p>
