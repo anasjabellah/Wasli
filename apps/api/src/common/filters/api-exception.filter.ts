@@ -21,6 +21,17 @@ export class ApiExceptionFilter implements ExceptionFilter {
       return;
     }
 
+    if (isTransactionStartTimeout(exception)) {
+      this.logger.error(exception instanceof Error ? exception.stack : exception);
+      response.status(HttpStatus.SERVICE_UNAVAILABLE).json({
+        statusCode: HttpStatus.SERVICE_UNAVAILABLE,
+        code: 'SERVICE_UNAVAILABLE',
+        message: 'Le service est momentanément indisponible. Réessayez.',
+        path: request.url,
+      });
+      return;
+    }
+
     this.logger.error(exception instanceof Error ? exception.stack : exception);
     response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -28,4 +39,9 @@ export class ApiExceptionFilter implements ExceptionFilter {
       path: request.url,
     });
   }
+}
+
+function isTransactionStartTimeout(exception: unknown): boolean {
+  if (typeof exception !== 'object' || exception === null || !('code' in exception)) return false;
+  return (exception as { code?: unknown }).code === 'P2028';
 }

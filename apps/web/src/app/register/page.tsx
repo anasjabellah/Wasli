@@ -301,7 +301,8 @@ export default function RegisterPage() {
       router.push('/app');
     } catch (caught) {
       const failure = caught as ApiError;
-      setError(failure instanceof Error ? failure.message : text.failed);
+      const message = failure instanceof Error ? failure.message : text.failed;
+      setError(message === 'Internal server error' ? text.failed : message);
       pendingRef.current = false;
       setPending(false);
     }
