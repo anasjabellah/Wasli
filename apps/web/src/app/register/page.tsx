@@ -37,6 +37,8 @@ const copy = {
     adminPhone: 'Téléphone (optionnel)',
     password: 'Mot de passe',
     confirm: 'Confirmer le mot de passe',
+    show: 'Afficher',
+    hide: 'Masquer',
     continue: 'Continuer',
     back: 'Retour',
     submit: 'Créer mon centre',
@@ -80,6 +82,8 @@ const copy = {
     adminPhone: 'الهاتف (اختياري)',
     password: 'كلمة السر',
     confirm: 'تأكيد كلمة السر',
+    show: 'إظهار',
+    hide: 'إخفاء',
     continue: 'متابعة',
     back: 'رجوع',
     submit: 'أنشئ مركزي',
@@ -161,7 +165,7 @@ const empty: Fields = {
 };
 
 function Field({
-  label, value, onChange, message, type = 'text', autoComplete, span = false, dir,
+  label, value, onChange, message, type = 'text', autoComplete, span = false, dir, reveal,
 }: {
   label: string;
   value: string;
@@ -171,13 +175,21 @@ function Field({
   autoComplete?: string;
   span?: boolean;
   dir?: 'ltr';
+  reveal?: { shown: boolean; show: string; hide: string; onToggle: () => void };
 }) {
   return (
     <label className={span ? 'ax-span' : undefined}>
-      {label}
+      {reveal ? (
+        <span className="ax-label-row">
+          {label}
+          <button className="ax-reveal" type="button" aria-pressed={reveal.shown} onClick={reveal.onToggle}>
+            {reveal.shown ? reveal.hide : reveal.show}
+          </button>
+        </span>
+      ) : label}
       <input
         className={message ? 'ax-field invalid' : 'ax-field'}
-        type={type}
+        type={reveal?.shown ? 'text' : type}
         dir={dir}
         value={value}
         autoComplete={autoComplete}
@@ -198,6 +210,8 @@ export default function RegisterPage() {
   const [issues, setIssues] = useState<IssueMap>({});
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const pendingRef = useRef(false);
 
   function set(key: keyof Fields, value: string): void {
@@ -367,14 +381,16 @@ export default function RegisterPage() {
               <Field label={text.last} value={fields.lastName} message={issueText(issues.lastName, text)} autoComplete="family-name" onChange={(value) => set('lastName', value)} />
               <Field label={text.email} type="email" dir="ltr" value={fields.email} message={issueText(issues.email, text)} autoComplete="username" onChange={(value) => set('email', value)} />
               <Field label={text.adminPhone} dir="ltr" value={fields.phone} message={issueText(issues.phone, text)} onChange={(value) => set('phone', value)} />
-              <Field label={text.password} type="password" dir="ltr" value={fields.password} message={issueText(issues.password, text)} autoComplete="new-password" onChange={(value) => set('password', value)} />
-              <Field label={text.confirm} type="password" dir="ltr" value={fields.confirmPassword} message={issueText(issues.confirmPassword, text)} autoComplete="new-password" onChange={(value) => set('confirmPassword', value)} />
+              <Field label={text.password} type="password" dir="ltr" value={fields.password} message={issueText(issues.password, text)} autoComplete="new-password" reveal={{ shown: showPassword, show: text.show, hide: text.hide, onToggle: () => setShowPassword((value) => !value) }} onChange={(value) => set('password', value)} />
+              <Field label={text.confirm} type="password" dir="ltr" value={fields.confirmPassword} message={issueText(issues.confirmPassword, text)} autoComplete="new-password" reveal={{ shown: showConfirm, show: text.show, hide: text.hide, onToggle: () => setShowConfirm((value) => !value) }} onChange={(value) => set('confirmPassword', value)} />
             </div>
           )}
           </div>
           {error ? <p className="ax-error" role="alert">{error}</p> : null}
-          <button className="ax-btn" type="submit" disabled={pending}>{pending ? text.sending : step === 1 ? text.continue : text.submit}</button>
-          {step === 2 ? <button className="ax-back" type="button" onClick={() => { setError(null); setIssues({}); setStep(1); }}>{text.back}</button> : null}
+          <div className="ax-actions">
+            <button className="ax-btn" type="submit" disabled={pending}>{pending ? text.sending : step === 1 ? text.continue : text.submit}</button>
+            {step === 2 ? <button className="ax-back" type="button" disabled={pending} onClick={() => { setError(null); setIssues({}); setStep(1); }}>{text.back}</button> : null}
+          </div>
           {step === 2 ? <p className="ax-note">{text.note}</p> : null}
         </form>
       </section>

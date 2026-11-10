@@ -242,49 +242,56 @@
   background: white;
   overflow-y: auto;
 }
-.ax-onboard { width: min(440px, 100%); display: grid; gap: 12px; margin-block: auto; }
+.ax-onboard { width: min(440px, 100%); display: grid; gap: 14px; margin-block: auto; }
+.ax-onboard label { gap: 8px; }
+.ax-onboard .ax-fields { gap: 16px; }
 .ax-onboard-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .ax-onboard .ax-account { margin: 0; }
 .ax-onboard-kicker { color: var(--cobalt); }
 .ax-onboard h2 { margin: 0; font-size: clamp(2rem, 3vw, 2.5rem); letter-spacing: -0.045em; line-height: 1; }
 .ax-onboard-lede { margin: 0; color: var(--muted); line-height: 1.5; }
-.ax-steps { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 2px 0 0; padding: 0; position: relative; }
+.ax-steps { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 4px 0 2px; padding: 0; position: relative; }
 .ax-steps::before {
   content: "";
   position: absolute;
   top: 13px;
-  inset-inline: 18px;
+  inset-inline: 25%;
   height: 2px;
   background: var(--grey);
 }
 .ax-steps li { position: relative; min-width: 0; }
 .ax-steps button {
+  position: relative;
+  z-index: 1;
   width: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 8px;
   padding: 0;
   border: 0;
-  background: white;
+  background: transparent;
   color: var(--navy);
   font-weight: 800;
-  font-size: 0.84rem;
-  line-height: 1.2;
-  text-align: start;
+  font-size: 0.82rem;
+  line-height: 1.25;
+  text-align: center;
+  text-wrap: balance;
   cursor: pointer;
 }
 .ax-steps button span {
   width: 28px; height: 28px; border-radius: 999px; flex: none;
   display: grid; place-items: center;
   background: var(--grey); color: var(--navy); font-size: 0.72rem;
+  box-shadow: 0 0 0 5px white;
   transition: background-color 180ms ease, color 180ms ease;
 }
 .ax-steps[data-step="2"]::after {
   content: "";
   position: absolute;
   top: 13px;
-  inset-inline-start: 18px;
-  width: calc(50% - 24px);
+  inset-inline-start: 25%;
+  width: 25%;
   height: 2px;
   background: var(--cobalt);
 }
@@ -297,11 +304,13 @@
 .ax-steps .done button span { background: var(--cobalt); color: white; }
 .ax-steps .upcoming button { color: #8b93a7; cursor: default; }
 .ax-steps button:disabled { opacity: 1; }
+.ax-actions { display: grid; gap: 10px; justify-items: stretch; }
 .ax-back {
   justify-self: center;
-  border: 0; background: none; padding: 0; cursor: pointer;
+  border: 0; background: none; padding: 2px 8px; cursor: pointer;
   color: var(--cobalt); font-weight: 800;
 }
+.ax-back:disabled { opacity: 0.55; cursor: wait; }
 .ax.rtl .ax-queue header, .ax.rtl .ax-pickup p, .ax.rtl .ax-caption { letter-spacing: 0; text-transform: none; }
 .ax.rtl .ax-onboard h2 { letter-spacing: 0; }
 
