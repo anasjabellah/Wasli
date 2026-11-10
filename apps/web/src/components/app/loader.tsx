@@ -2,6 +2,8 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { staffGet } from '@/lib/api';
+import { useDash } from './locale';
+import { ErrorState, LoadingState } from './ui';
 
 export function Remote<T>({
   path,
@@ -23,19 +25,14 @@ export function Remote<T>({
       .finally(() => setLoading(false));
   }
 
+  const { text } = useDash();
+
   useEffect(() => {
     load();
   }, [path]);
 
-  if (loading && !data) return <p>Chargement…</p>;
-  if (error) {
-    return (
-      <div className="card">
-        <p className="error">{error}</p>
-        <button className="btn primary" type="button" onClick={load}>Réessayer</button>
-      </div>
-    );
-  }
+  if (loading && !data) return <LoadingState>{text.loading}</LoadingState>;
+  if (error) return <ErrorState message={error} retry={text.retry} onRetry={load} />;
   if (!data) return null;
   return <>{render(data, load)}</>;
 }

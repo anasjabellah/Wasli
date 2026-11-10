@@ -1,28 +1,28 @@
 'use client';
 
 import { Remote } from '@/components/app/loader';
+import { useDash } from '@/components/app/locale';
+import { DataTable, PageHeader } from '@/components/app/ui';
 
 type Teacher = { id: string; firstName: string; lastName: string; email: string };
 
 export default function TeachersPage() {
+  const { text } = useDash();
   return (
     <Remote<{ items: Teacher[] }>
       path="/operations/teachers"
       render={(data) => (
-        <div className="stack">
-          <h1>Enseignants</h1>
-          <div className="sheet">
-            <table className="table">
-              <thead><tr><th>Nom</th><th>E-mail</th></tr></thead>
-              <tbody>
-                {data.items.length === 0 ? <tr><td className="empty" colSpan={2}>Aucun enseignant.</td></tr> : null}
-                {data.items.map((teacher) => (
-                  <tr key={teacher.id}><td>{teacher.firstName} {teacher.lastName}</td><td>{teacher.email}</td></tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <>
+          <PageHeader title={text.pages['/app/teachers']} lede={text.writeNote} />
+          <DataTable
+            columns={[text.name, text.email]}
+            empty={text.noTeachers}
+            rows={data.items.map((teacher) => ({
+              id: teacher.id,
+              cells: [`${teacher.firstName} ${teacher.lastName}`, teacher.email],
+            }))}
+          />
+        </>
       )}
     />
   );

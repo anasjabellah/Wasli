@@ -1,37 +1,35 @@
 'use client';
 
 import { useState } from 'react';
+import { recordLabel } from '@/components/app/labels';
 import { Remote } from '@/components/app/loader';
+import { useDash } from '@/components/app/locale';
+import { DataTable, PageHeader, SearchBar } from '@/components/app/ui';
 
 type Student = { id: string; firstName: string; lastName: string; status: string; classes: string[] };
 
 export default function StudentsPage() {
+  const { locale, text } = useDash();
   const [query, setQuery] = useState('');
   const [submitted, setSubmitted] = useState('');
   return (
-      <div className="stack">
-      <div className="page-head">
-        <h1>Élèves</h1>
-        <form onSubmit={(event) => { event.preventDefault(); setSubmitted(query.trim()); }}>
-          <input className="field" aria-label="Rechercher" value={query} placeholder="Rechercher" onChange={(event) => setQuery(event.target.value)} />
-        </form>
-      </div>
+    <>
+      <PageHeader title={text.pages['/app/students']}>
+        <SearchBar label={text.search} placeholder={text.search} value={query} onChange={setQuery} onSubmit={() => setSubmitted(query.trim())} />
+      </PageHeader>
       <Remote<{ items: Student[] }>
         path={`/operations/students${submitted ? `?q=${encodeURIComponent(submitted)}` : ''}`}
         render={(data) => (
-          <div className="sheet">
-            <table className="table">
-              <thead><tr><th>Nom</th><th>Classe</th><th>Statut</th></tr></thead>
-              <tbody>
-                {data.items.length === 0 ? <tr><td className="empty" colSpan={3}>Aucun élève.</td></tr> : null}
-                {data.items.map((student) => (
-                  <tr key={student.id}><td>{student.firstName} {student.lastName}</td><td>{student.classes.join(', ') || '—'}</td><td>{student.status}</td></tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={[text.name, text.className, text.status]}
+            empty={text.noStudents}
+            rows={data.items.map((student) => ({
+              id: student.id,
+              cells: [`${student.firstName} ${student.lastName}`, student.classes.join(', ') || text.unavailable, recordLabel(student.status, locale)],
+            }))}
+          />
         )}
       />
-    </div>
+    </>
   );
 }

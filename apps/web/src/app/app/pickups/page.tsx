@@ -4,86 +4,109 @@ import { ACTIVE_PICKUP_STATUSES, type StaffPickup } from '@wasli/shared';
 import { useState } from 'react';
 import { statusLabel } from '@/components/app/labels';
 import { Remote } from '@/components/app/loader';
+import { useDash } from '@/components/app/locale';
+import { EmptyState, FilterBar, PageHeader, SearchBar, StatusBadge } from '@/components/app/ui';
 import { readSession, staffPost } from '@/lib/api';
 
 export default function PickupsPage() {
+  const { text } = useDash();
   const [query, setQuery] = useState('');
   const [submitted, setSubmitted] = useState('');
+  const [className, setClassName] = useState('');
   return (
-    <div className="stack">
-      <div className="page-head">
-        <h1>Récupérations</h1>
-        <form onSubmit={(event) => { event.preventDefault(); setSubmitted(query.trim()); }}>
-          <input className="field" aria-label="Rechercher" value={query} placeholder="Élève, classe, parent" onChange={(event) => setQuery(event.target.value)} />
-        </form>
-      </div>
+    <>
+      <PageHeader title={text.pages['/app/pickups']}>
+        <SearchBar label={text.search} placeholder={text.search} value={query} onChange={setQuery} onSubmit={() => setSubmitted(query.trim())} />
+      </PageHeader>
       <Remote<{ requests: StaffPickup[] }>
         path={`/operations/queue${submitted ? `?q=${encodeURIComponent(submitted)}` : ''}`}
-        render={(data, reload) => (
-          <Queue
-            requests={data.requests.filter((request) =>
-              (ACTIVE_PICKUP_STATUSES as readonly string[]).includes(request.status),
-            )}
-            reload={reload}
-          />
-        )}
+        render={(data, reload) => {
+          const active = data.requests.filter((request) => (ACTIVE_PICKUP_STATUSES as readonly string[]).includes(request.status));
+          const classes = [...new Set(active.map((request) => request.className).filter((name): name is string => Boolean(name)))];
+          const visible = className ? active.filter((request) => request.className === className) : active;
+          return (
+            <>
+              <FilterBar>
+                <label>
+                  {text.className}
+                  <select value={className} onChange={(event) => setClassName(event.target.value)}>
+                    <option value="">{text.allClasses}</option>
+                    {classes.map((name) => <option key={name} value={name}>{name}</option>)}
+                  </select>
+                </label>
+              </FilterBar>
+              <Queue requests={visible} reload={reload} />
+            </>
+          );
+        }}
       />
-    </div>
+    </>
   );
 }
 
 function Queue({ requests, reload }: { requests: StaffPickup[]; reload: () => void }) {
+  const { text } = useDash();
+  if (requests.length === 0) return <EmptyState>{text.noPickups}</EmptyState>;
+  return (
+    <div className="dk-stack">
+      {requests.map((request) => <RequestCard key={request.id} request={request} reload={reload} />)}
+    </div>
+  );
+}
+
+function RequestCard({ request, reload }: { request: StaffPickup; reload: () => void }) {
+  const { locale, text } = useDash();
   const roles = readSession()?.user.roles ?? [];
   const canPrepare = roles.includes('TEACHER') || roles.includes('CENTER_ADMIN');
   const canVerify = canPrepare || roles.includes('RECEPTION');
   const [reason, setReason] = useState('');
   const [pin, setPin] = useState('');
   const [message, setMessage] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const when = (value: string | null) => (value ? new Date(value).toLocaleTimeString(locale === 'ar' ? 'ar-MA' : 'fr-MA') : text.unavailable);
 
   async function act(path: string, body?: unknown): Promise<void> {
+    if (pending) return;
+    setPending(true);
     setMessage(null);
     try {
       await staffPost(path, body);
       setPin('');
       reload();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Action impossible');
+      setMessage(error instanceof Error ? error.message : text.actionFailed);
+    } finally {
+      setPending(false);
     }
   }
 
-  if (requests.length === 0) return <p className="empty">Aucune demande.</p>;
-
   return (
-    <div className="stack">
-      {message ? <p className="error">{message}</p> : null}
-      {requests.map((request) => (
-        <article className="sheet" key={request.id} style={{ padding: 16 }}>
-          <div className="page-head">
-            <div>
-              <h2 style={{ margin: 0 }}>{request.studentName}</h2>
-              <p className="note">{request.className} · {request.parentName} · arrivée {new Date(request.requestedAt).toLocaleTimeString()} · fin {request.scheduledEndAt ? new Date(request.scheduledEndAt).toLocaleTimeString() : '—'}</p>
-            </div>
-            <span className="pill">{statusLabel(request.status)}</span>
-          </div>
-          {request.delayReason ? <p className="warn">{request.delayReason}</p> : null}
-          <div className="queue-actions">
-            {canPrepare && request.status === 'NOTIFIED' ? <button className="btn primary" type="button" onClick={() => void act(`/pickup-requests/${request.id}/prepare`)}>Préparer</button> : null}
-            {canPrepare && (request.status === 'NOTIFIED' || request.status === 'PREPARING') ? (
-              <>
-                <input className="field" value={reason} placeholder="Motif du retard" onChange={(event) => setReason(event.target.value)} />
-                <button className="btn soft" type="button" onClick={() => void act(`/pickup-requests/${request.id}/delay`, { reason })}>Retarder</button>
-              </>
-            ) : null}
-            {canPrepare && request.status === 'PREPARING' ? <button className="btn primary" type="button" onClick={() => void act(`/pickup-requests/${request.id}/ready`)}>Marquer prêt</button> : null}
-            {canVerify && request.status === 'READY' ? (
-              <>
-                <input className="field" value={pin} inputMode="numeric" placeholder="Code montré par le parent" onChange={(event) => setPin(event.target.value)} />
-                <button className="btn primary" type="button" onClick={() => void act(`/pickup-requests/${request.id}/verify-handover`, { pin })}>Vérifier la remise</button>
-              </>
-            ) : null}
-          </div>
-        </article>
-      ))}
-    </div>
+    <article className="dk-panel-card dk-request">
+      <div className="dk-request-head">
+        <div>
+          <h2>{request.studentName}</h2>
+          <p className="dk-note">{request.className ?? text.unavailable} · {request.parentName} · {text.arrival} {when(request.requestedAt)} · {text.finish} {when(request.scheduledEndAt)}</p>
+        </div>
+        <StatusBadge status={request.status} label={statusLabel(request.status, locale)} />
+      </div>
+      {request.delayReason ? <p className="dk-note">{request.delayReason}</p> : null}
+      {message ? <p className="dk-note">{message}</p> : null}
+      <div className="dk-actions">
+        {canPrepare && request.status === 'NOTIFIED' ? <button className="dk-btn" type="button" disabled={pending} onClick={() => void act(`/pickup-requests/${request.id}/prepare`)}>{text.prepare}</button> : null}
+        {canPrepare && (request.status === 'NOTIFIED' || request.status === 'PREPARING') ? (
+          <>
+            <input className="dk-field" value={reason} placeholder={text.delayPlaceholder} onChange={(event) => setReason(event.target.value)} />
+            <button className="dk-btn soft" type="button" disabled={pending} onClick={() => void act(`/pickup-requests/${request.id}/delay`, { reason })}>{text.delay}</button>
+          </>
+        ) : null}
+        {canPrepare && request.status === 'PREPARING' ? <button className="dk-btn" type="button" disabled={pending} onClick={() => void act(`/pickup-requests/${request.id}/ready`)}>{text.markReady}</button> : null}
+        {canVerify && request.status === 'READY' ? (
+          <>
+            <input className="dk-field" value={pin} inputMode="numeric" placeholder={text.pinPlaceholder} onChange={(event) => setPin(event.target.value)} />
+            <button className="dk-btn" type="button" disabled={pending} onClick={() => void act(`/pickup-requests/${request.id}/verify-handover`, { pin })}>{text.verify}</button>
+          </>
+        ) : null}
+      </div>
+    </article>
   );
 }

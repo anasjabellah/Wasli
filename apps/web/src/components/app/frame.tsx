@@ -1,44 +1,31 @@
 'use client';
 
-import type { AccountProfile } from '@wasli/shared';
+import type { AccountProfile, ParentNotification } from '@wasli/shared';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
-import { clearSession, readSession } from '@/lib/api';
+import { clearSession, readSession, staffGet } from '@/lib/api';
+import { dashCopy, type DashLocale } from './copy';
+import { Icon, type IconName } from './icons';
+import { DashProvider, useDash } from './locale';
+import { ConfirmationDialog, EmptyState, LoadingState } from './ui';
+import './dashboard.css';
 
-const links = [
-  { href: '/app', label: 'Vue d’ensemble', roles: ['CENTER_ADMIN', 'TEACHER', 'RECEPTION'] },
-  { href: '/app/pickups', label: 'Récupérations', roles: ['CENTER_ADMIN', 'TEACHER', 'RECEPTION'] },
-  { href: '/app/students', label: 'Élèves', roles: ['CENTER_ADMIN', 'TEACHER', 'RECEPTION'] },
-  { href: '/app/parents', label: 'Parents', roles: ['CENTER_ADMIN'] },
-  { href: '/app/teachers', label: 'Enseignants', roles: ['CENTER_ADMIN'] },
-  { href: '/app/classes', label: 'Classes', roles: ['CENTER_ADMIN', 'TEACHER', 'RECEPTION'] },
-  { href: '/app/schedules', label: 'Horaires', roles: ['CENTER_ADMIN', 'TEACHER', 'RECEPTION'] },
-  { href: '/app/history', label: 'Historique', roles: ['CENTER_ADMIN', 'TEACHER', 'RECEPTION'] },
-  { href: '/app/reports', label: 'Rapports', roles: ['CENTER_ADMIN'] },
-  { href: '/app/settings', label: 'Réglages', roles: ['CENTER_ADMIN', 'TEACHER', 'RECEPTION', 'PARENT'] },
+const links: { href: string; roles: AccountProfile['roles'][number][]; icon: IconName }[] = [
+  { href: '/app', roles: ['CENTER_ADMIN', 'TEACHER', 'RECEPTION'], icon: 'overview' },
+  { href: '/app/pickups', roles: ['CENTER_ADMIN', 'TEACHER', 'RECEPTION'], icon: 'pickups' },
+  { href: '/app/students', roles: ['CENTER_ADMIN', 'TEACHER', 'RECEPTION'], icon: 'students' },
+  { href: '/app/parents', roles: ['CENTER_ADMIN'], icon: 'parents' },
+  { href: '/app/teachers', roles: ['CENTER_ADMIN'], icon: 'teachers' },
+  { href: '/app/classes', roles: ['CENTER_ADMIN', 'TEACHER', 'RECEPTION'], icon: 'classes' },
+  { href: '/app/schedules', roles: ['CENTER_ADMIN', 'TEACHER', 'RECEPTION'], icon: 'schedules' },
+  { href: '/app/history', roles: ['CENTER_ADMIN', 'TEACHER', 'RECEPTION'], icon: 'history' },
+  { href: '/app/reports', roles: ['CENTER_ADMIN'], icon: 'reports' },
+  { href: '/app/settings', roles: ['CENTER_ADMIN', 'TEACHER', 'RECEPTION', 'PARENT'], icon: 'settings' },
 ];
-
-function Icon({ href }: { href: string }) {
-  const common = { width: 16, height: 16, viewBox: '0 0 16 16', fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, 'aria-hidden': true };
-  if (href.endsWith('/pickups')) {
-    return <svg {...common}><path d="M2 4h12M2 8h12M2 12h8" /></svg>;
-  }
-  if (href.endsWith('/students') || href.endsWith('/parents') || href.endsWith('/teachers')) {
-    return <svg {...common}><circle cx="8" cy="5.5" r="2.2" /><path d="M3.5 13c.7-2 2.3-3 4.5-3s3.8 1 4.5 3" /></svg>;
-  }
-  if (href.endsWith('/history') || href.endsWith('/reports')) {
-    return <svg {...common}><path d="M3 13V7M8 13V3M13 13V9" /></svg>;
-  }
-  if (href.endsWith('/settings')) {
-    return <svg {...common}><circle cx="8" cy="8" r="2" /><path d="M8 2.5v1.5M8 12v1.5M2.5 8H4M12 8h1.5M4 4l1 1M11 11l1 1M12 4l-1 1M5 11l-1 1" /></svg>;
-  }
-  return <svg {...common}><rect x="2.5" y="2.5" width="4.5" height="4.5" rx="1" /><rect x="9" y="2.5" width="4.5" height="4.5" rx="1" /><rect x="2.5" y="9" width="4.5" height="4.5" rx="1" /><rect x="9" y="9" width="4.5" height="4.5" rx="1" /></svg>;
-}
 
 export function AppFrame({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const pathname = usePathname();
   const [user, setUser] = useState<AccountProfile | null>(null);
 
   useEffect(() => {
@@ -58,44 +45,143 @@ export function AppFrame({ children }: { children: ReactNode }) {
   }, [router]);
 
   if (!user) {
-    return <main className="wrap"><p>Chargement…</p></main>;
+    return <main className="dk"><LoadingState>{dashCopy.fr.loading}</LoadingState></main>;
   }
 
-  const visible = links.filter((link) => link.roles.some((role) => user.roles.includes(role as AccountProfile['roles'][number])));
+  const initial: DashLocale = user.locale === 'ar' ? 'ar' : 'fr';
+  return (
+    <DashProvider initial={initial}>
+      <FrameBody user={user}>{children}</FrameBody>
+    </DashProvider>
+  );
+}
+
+function FrameBody({ user, children }: { user: AccountProfile; children: ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { locale, text, setLocale } = useDash();
+  const [navOpen, setNavOpen] = useState(false);
+  const [confirmLogout, setConfirmLogout] = useState(false);
+  const [today, setToday] = useState('');
+  const visible = links.filter((link) => link.roles.some((role) => user.roles.includes(role)));
   const admin = user.roles.includes('CENTER_ADMIN');
   const ordered = admin ? visible : [...visible].sort((left, right) => Number(right.href === '/app/pickups') - Number(left.href === '/app/pickups'));
   const staff = user.roles.some((role) => role === 'CENTER_ADMIN' || role === 'TEACHER' || role === 'RECEPTION');
+  const title = text.pages[pathname as keyof typeof text.pages] ?? text.pages['/app'];
+  const roleLine = user.roles.map((role) => text.roles[role] ?? role).join(' · ');
+  useEffect(() => {
+    setToday(new Date().toLocaleDateString(locale === 'ar' ? 'ar-MA' : 'fr-MA', { weekday: 'long', day: 'numeric', month: 'long' }));
+  }, [locale]);
+
+  function logout(): void {
+    clearSession();
+    router.replace('/login');
+  }
 
   return (
-    <div className="shell">
-      <aside className="side">
-        <Link href="/" className="brand"><span className="mark">W</span> Wasli</Link>
-        <nav className="side-nav" aria-label="Centre">
+    <div className={text.dir === 'rtl' ? 'dk rtl' : 'dk'} lang={locale} dir={text.dir} data-nav={navOpen ? 'open' : 'closed'}>
+      <button className="dk-scrim" type="button" aria-label={text.closeNav} onClick={() => setNavOpen(false)} />
+      <aside className="dk-side">
+        <Link href="/app" className="dk-logo" onClick={() => setNavOpen(false)}>
+          <span className="dk-mark">W</span>
+          <span>Wasli</span>
+        </Link>
+        <nav className="dk-nav" aria-label={text.navLabel}>
           {ordered.map((link) => (
-            <Link key={link.href} href={link.href} className={pathname === link.href ? 'nav-item active' : 'nav-item'}>
-              <Icon href={link.href} />
-              <span>{link.label}</span>
+            <Link
+              key={link.href}
+              href={link.href}
+              className={pathname === link.href ? 'active' : undefined}
+              title={text.pages[link.href as keyof typeof text.pages]}
+              onClick={() => setNavOpen(false)}
+            >
+              <Icon name={link.icon} />
+              <span>{text.pages[link.href as keyof typeof text.pages]}</span>
             </Link>
           ))}
         </nav>
-        <button className="btn ghost side-exit" type="button" onClick={() => { clearSession(); router.replace('/login'); }}>
-          Déconnexion
-        </button>
+        <div className="dk-identity">
+          <div>
+            <strong>{user.firstName} {user.lastName}</strong>
+            <span>{roleLine}</span>
+          </div>
+          <button className="dk-btn ghost" type="button" onClick={() => setConfirmLogout(true)}>
+            <Icon name="logout" size={16} />
+            <span>{text.logout}</span>
+          </button>
+        </div>
       </aside>
-      <div className="workspace">
-        <header className="topbar">
-          <strong>{user.firstName} {user.lastName}</strong>
-          <span className="role">{user.roles.join(' · ')}</span>
+      <div className="dk-workspace">
+        <header className="dk-top">
+          <div>
+            <button className="dk-icon-btn dk-menu" type="button" aria-label={text.openNav} onClick={() => setNavOpen(true)}>
+              <Icon name="menu" />
+            </button>
+            <h2>{title}</h2>
+            <small>{today}</small>
+          </div>
+          <div className="dk-top-actions">
+            <button className="dk-btn ghost" type="button" onClick={() => setLocale(locale === 'fr' ? 'ar' : 'fr')}>{text.lang}</button>
+            <Notifications label={text.notifications} empty={text.notificationsEmpty} />
+          </div>
         </header>
-        <section className="main">
+        <section className="dk-content">
           {staff ? children : (
-            <article className="card">
-              <h1>Application parent</h1>
-              <p>Les demandes « Je suis arrivé », le suivi et le code se font dans l’application mobile. Ce tableau de bord est réservé à l’équipe du centre.</p>
+            <article className="dk-card">
+              <h2>{text.parentOnlyTitle}</h2>
+              <p className="dk-note">{text.parentOnly}</p>
             </article>
           )}
         </section>
       </div>
+      <ConfirmationDialog
+        open={confirmLogout}
+        title={text.logoutTitle}
+        body={text.logoutBody}
+        confirmLabel={text.logout}
+        cancelLabel={text.cancel}
+        onConfirm={logout}
+        onClose={() => setConfirmLogout(false)}
+      />
+    </div>
+  );
+}
+
+function Notifications({ label, empty }: { label: string; empty: string }) {
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState<ParentNotification[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const { locale } = useDash();
+
+  function toggle(): void {
+    const next = !open;
+    setOpen(next);
+    if (!next || items) return;
+    staffGet<{ notifications: ParentNotification[] }>('/notifications')
+      .then((data) => setItems(data.notifications))
+      .catch((caught: unknown) => setError(caught instanceof Error ? caught.message : empty));
+  }
+
+  return (
+    <div className="dk-popover">
+      <button className="dk-icon-btn" type="button" aria-expanded={open} aria-label={label} onClick={toggle}>
+        <Icon name="bell" />
+      </button>
+      {open ? (
+        <div className="dk-panel">
+          <strong>{label}</strong>
+          {error ? <p>{error}</p> : null}
+          {!items && !error ? <p>…</p> : null}
+          {items && items.length === 0 ? <EmptyState>{empty}</EmptyState> : null}
+          {items?.map((item) => (
+            <article key={item.id}>
+              <strong>{item.title}</strong>
+              <p>{item.body}</p>
+              <p>{new Date(item.createdAt).toLocaleString(locale === 'ar' ? 'ar-MA' : 'fr-MA')}</p>
+            </article>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
