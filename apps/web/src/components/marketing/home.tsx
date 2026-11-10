@@ -587,7 +587,9 @@ export function MarketingHome() {
           <div className="mh-explore">
             {text.products.map(([title, state, body, kind]) => (
               <article className={`mh-tile ${kind} mh-rise`} key={title}>
-                <Sketch kind={kind} locale={locale} file={text.file} ready={text.ready} preparing={text.preparing} />
+                <div className="mh-explore-visual">
+                  <Sketch kind={kind} locale={locale} file={text.file} ready={text.ready} preparing={text.preparing} />
+                </div>
                 <div className="mh-tile-copy">
                   <span className={state === 'Partiel' || state === 'جزئي' ? 'mh-badge partial' : 'mh-badge'}>{state}</span>
                   <h3>{title}</h3>
