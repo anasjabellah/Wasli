@@ -352,6 +352,94 @@
   .ax-onboard-head { flex-direction: column; align-items: flex-start; gap: 6px; }
 }
 
+.ax-gate {
+  display: grid;
+  grid-template-columns: minmax(440px, 1fr) minmax(420px, 520px);
+  min-height: 100svh;
+  background: white;
+}
+.ax-gate-brand {
+  position: sticky;
+  top: 0;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 28px 44px 32px;
+  color: white;
+  background-color: var(--cobalt);
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 48px 48px;
+  overflow: auto;
+}
+.ax-gate-brand .ax-logo { color: white; }
+.ax-gate-brand .ax-lang { border-color: rgba(255, 255, 255, 0.72); color: white; background: transparent; }
+.ax-gate-brand .ax-lang:hover { background: var(--lime); border-color: var(--lime); color: var(--navy); }
+.ax-gate-main { margin-block: auto; display: grid; gap: 22px; }
+.ax-gate-copy { display: grid; gap: 14px; max-width: 34rem; }
+.ax-gate .ax-gate-brand h1 {
+  max-width: 16ch;
+  color: white;
+  font-size: clamp(2.7rem, 3.6vw, 4rem);
+  line-height: 0.96;
+}
+.ax-gate-support { margin: 0; max-width: 32rem; font-size: 1.08rem; line-height: 1.55; color: rgba(255, 255, 255, 0.88); }
+.ax-gate-art { display: grid; gap: 12px; }
+.ax-gate-arrow {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: start;
+  align-self: end;
+  width: 72px;
+  height: 28px;
+  color: var(--lime);
+}
+.ax.rtl .ax-gate-arrow { transform: scaleX(-1); }
+.ax-gate-pane {
+  min-height: 100svh;
+  display: flex;
+  align-items: safe center;
+  justify-content: center;
+  padding: 32px 36px;
+  background: white;
+}
+.ax-gate-form { width: min(400px, 100%); display: grid; gap: 16px; }
+.ax-gate-form h2 { margin: 0; font-size: clamp(2.2rem, 3vw, 2.8rem); letter-spacing: -0.045em; line-height: 1; }
+.ax-gate-form .ax-lede { color: var(--muted); max-width: 34rem; }
+.ax-gate-form label { gap: 8px; }
+.ax-gate-form .ax-field { min-height: 52px; }
+
+@media (max-width: 1023px) {
+  .ax-gate { grid-template-columns: 1fr; background: var(--soft); }
+  .ax-gate-brand {
+    position: static;
+    min-height: 0;
+    gap: 14px;
+    padding: 22px 28px 24px;
+  }
+  .ax-gate .ax-gate-brand h1 { max-width: 18ch; font-size: clamp(1.8rem, 4vw, 2.4rem); }
+  .ax-gate-support { font-size: 1rem; }
+  .ax-gate-art { display: none; }
+  .ax-gate-pane { min-height: 0; align-items: stretch; padding: 16px 24px 40px; background: transparent; }
+  .ax-gate-form {
+    width: 100%;
+    background: white;
+    border-radius: 24px;
+    padding: 24px 22px 22px;
+    box-shadow: 0 16px 36px rgba(8, 20, 70, 0.06);
+  }
+}
+
+@media (max-width: 767px) {
+  .ax-gate-support { display: none; }
+  .ax-gate-brand { gap: 10px; padding: 14px 16px 16px; }
+  .ax-gate .ax-gate-brand h1 { font-size: 1.45rem; line-height: 1.15; }
+  .ax-gate-pane { padding: 12px 16px 32px; }
+  .ax-gate-form { border-radius: 20px; padding: 20px 16px 18px; }
+}
+
 @media (max-width: 900px) {
   .ax-bar, .ax-login, .ax-register { width: min(1120px, calc(100% - 28px)); }
   .ax-login { grid-template-columns: 1fr; gap: 22px; padding-top: 8px; flex: none; align-content: start; }
