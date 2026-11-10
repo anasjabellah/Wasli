@@ -14,7 +14,8 @@ export type IconName =
   | 'close'
   | 'bell'
   | 'search'
-  | 'calendar';
+  | 'calendar'
+  | 'check';
 
 export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
   const props = {
@@ -110,6 +111,14 @@ export function Icon({ name, size = 18 }: { name: IconName; size?: number }) {
     return (
       <svg {...props}>
         <path d="M6 6l12 12M18 6 6 18" />
+      </svg>
+    );
+  }
+  if (name === 'check') {
+    return (
+      <svg {...props}>
+        <circle cx="12" cy="12" r="8" />
+        <path d="m8.5 12.2 2.3 2.3 4.7-5" />
       </svg>
     );
   }

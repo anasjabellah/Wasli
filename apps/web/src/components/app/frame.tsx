@@ -63,6 +63,7 @@ function FrameBody({ user, children }: { user: AccountProfile; children: ReactNo
   const [navOpen, setNavOpen] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [today, setToday] = useState('');
+  const [centerName, setCenterName] = useState('');
   const visible = links.filter((link) => link.roles.some((role) => user.roles.includes(role)));
   const admin = user.roles.includes('CENTER_ADMIN');
   const ordered = admin ? visible : [...visible].sort((left, right) => Number(right.href === '/app/pickups') - Number(left.href === '/app/pickups'));
@@ -72,6 +73,24 @@ function FrameBody({ user, children }: { user: AccountProfile; children: ReactNo
   useEffect(() => {
     setToday(new Date().toLocaleDateString(locale === 'ar' ? 'ar-MA' : 'fr-MA', { weekday: 'long', day: 'numeric', month: 'long' }));
   }, [locale]);
+  useEffect(() => {
+    if (!staff) return;
+    const session = readSession();
+    if (!session) return;
+    const controller = new AbortController();
+    fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/api/v1/operations/overview`, {
+      headers: { accept: 'application/json', authorization: `Bearer ${session.accessToken}` },
+      signal: controller.signal,
+    })
+      .then(async (response) => (response.ok ? response.json() as Promise<{ active: { centerName?: string }[]; recent: { centerName?: string }[] }> : null))
+      .then((data) => {
+        const named = data ? [...data.active, ...data.recent].find((request) => request.centerName) : undefined;
+        if (named?.centerName) setCenterName(named.centerName);
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [staff]);
+  const initials = `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
 
   function logout(): void {
     clearSession();
@@ -101,11 +120,12 @@ function FrameBody({ user, children }: { user: AccountProfile; children: ReactNo
           ))}
         </nav>
         <div className="dk-identity">
-          <div>
+          <span className="dk-avatar" aria-hidden="true">{initials}</span>
+          <div className="dk-who">
             <strong>{user.firstName} {user.lastName}</strong>
             <span>{roleLine}</span>
           </div>
-          <button className="dk-btn ghost" type="button" onClick={() => setConfirmLogout(true)}>
+          <button className="dk-btn ghost" type="button" title={text.logout} onClick={() => setConfirmLogout(true)}>
             <Icon name="logout" size={16} />
             <span>{text.logout}</span>
           </button>
@@ -113,16 +133,25 @@ function FrameBody({ user, children }: { user: AccountProfile; children: ReactNo
       </aside>
       <div className="dk-workspace">
         <header className="dk-top">
-          <div>
+          <div className="dk-top-title">
             <button className="dk-icon-btn dk-menu" type="button" aria-label={text.openNav} onClick={() => setNavOpen(true)}>
               <Icon name="menu" />
             </button>
-            <h2>{title}</h2>
-            <small>{today}</small>
+            <div>
+              <h2>{title}</h2>
+              <small>{[centerName, today].filter(Boolean).join(' · ')}</small>
+            </div>
           </div>
           <div className="dk-top-actions">
-            <button className="dk-btn ghost" type="button" onClick={() => setLocale(locale === 'fr' ? 'ar' : 'fr')}>{text.lang}</button>
+            <button className="dk-btn ghost dk-lang" type="button" onClick={() => setLocale(locale === 'fr' ? 'ar' : 'fr')}>{text.lang}</button>
             <Notifications label={text.notifications} empty={text.notificationsEmpty} />
+            <div className="dk-userchip">
+              <span className="dk-avatar" aria-hidden="true">{initials}</span>
+              <span className="dk-who">
+                <strong>{user.firstName} {user.lastName}</strong>
+                <small>{roleLine}</small>
+              </span>
+            </div>
           </div>
         </header>
         <section className="dk-content">

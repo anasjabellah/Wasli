@@ -1,7 +1,8 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { Icon } from './icons';
+import Link from 'next/link';
+import { Icon, type IconName } from './icons';
 
 export function PageHeader({
   title,
@@ -23,13 +24,28 @@ export function PageHeader({
   );
 }
 
-export function StatCard({ label, value, accent }: { label: string; value: number; accent?: 'lime' | 'blue' | 'navy' }) {
-  return (
-    <article className={accent ? `dk-stat ${accent}` : 'dk-stat'}>
+export function StatCard({
+  label,
+  value,
+  href,
+  icon,
+  accent,
+}: {
+  label: string;
+  value: number;
+  href?: string;
+  icon: IconName;
+  accent?: 'lime' | 'blue' | 'navy';
+}) {
+  const body = (
+    <>
+      <span className={accent ? `dk-stat-icon ${accent}` : 'dk-stat-icon'}><Icon name={icon} size={18} /></span>
       <span>{label}</span>
       <strong>{value}</strong>
-    </article>
+    </>
   );
+  if (href) return <Link href={href} className="dk-stat">{body}</Link>;
+  return <article className="dk-stat">{body}</article>;
 }
 
 export function StatusBadge({ status, label }: { status: string; label: string }) {
@@ -103,8 +119,13 @@ export function DataTable({
   );
 }
 
-export function EmptyState({ children }: { children: ReactNode }) {
-  return <p className="dk-empty">{children}</p>;
+export function EmptyState({ children, icon }: { children: ReactNode; icon?: IconName }) {
+  return (
+    <div className="dk-empty">
+      {icon ? <Icon name={icon} size={22} /> : null}
+      <p>{children}</p>
+    </div>
+  );
 }
 
 export function LoadingState({ children }: { children: ReactNode }) {
