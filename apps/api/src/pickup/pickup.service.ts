@@ -8,6 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import {
   ACTIVE_PICKUP_STATUSES,
+  PICKUP_STATUSES,
   parentCopy,
   PickupTransitionError,
   type ParentPickup,
@@ -437,6 +438,36 @@ export class PickupService {
       return link;
     }
     throw new NotFoundException({ code: 'STUDENT_NOT_FOUND', message: 'Élève introuvable.' });
+  }
+
+  async countByStatus(auth: AuthContext): Promise<Record<string, number>> {
+    const counts = Object.fromEntries(PICKUP_STATUSES.map((status) => [status, 0])) as Record<string, number>;
+    for (const scope of this.staffScopes(auth)) {
+      const grouped = await this.prisma.withTenant(
+        scope.centerId,
+        async (tx) => {
+          const classIds = scope.broad
+            ? null
+            : (
+                await tx.classTeacher.findMany({
+                  where: { teacherUserId: auth.userId, deletedAt: null },
+                  select: { classId: true },
+                })
+              ).map((row) => row.classId);
+          return tx.pickupRequest.groupBy({
+            by: ['status'],
+            where: {
+              deletedAt: null,
+              ...(classIds ? { classSession: { classId: { in: classIds } } } : {}),
+            },
+            _count: { _all: true },
+          });
+        },
+        auth.userId,
+      );
+      for (const row of grouped) counts[row.status] = (counts[row.status] ?? 0) + row._count._all;
+    }
+    return counts;
   }
 
   async listForStaff(auth: AuthContext): Promise<{ requests: StaffPickup[] }> {

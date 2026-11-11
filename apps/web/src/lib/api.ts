@@ -85,10 +85,18 @@ export async function registerCenter(body: {
 }
 
 export async function staffGet<T>(path: string): Promise<T> {
+  return authorized<T>(path, 'GET');
+}
+
+export async function staffWrite<T>(path: string, method: 'POST' | 'PATCH' | 'DELETE', body?: unknown): Promise<T> {
+  return authorized<T>(path, method, body);
+}
+
+async function authorized<T>(path: string, method: string, body?: unknown): Promise<T> {
   const session = readSession();
   if (!session) throw new Error('Connectez-vous.');
   try {
-    return await send<T>(path, { token: session.accessToken });
+    return await send<T>(path, { method, token: session.accessToken, body });
   } catch (error) {
     if (!(error instanceof Error) || (error as Error & { status?: number }).status !== 401) {
       throw error;
@@ -102,7 +110,7 @@ export async function staffGet<T>(path: string): Promise<T> {
       throw error;
     }
     writeSession(refreshed);
-    return send<T>(path, { token: refreshed.accessToken });
+    return send<T>(path, { method, token: refreshed.accessToken, body });
   }
 }
 

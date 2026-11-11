@@ -16,5 +16,25 @@ export type {
   RejectPickupRequestPayload,
   VerifyHandoverPayload,
 } from './parent-pickup.js';
+export {
+  classWriteSchema,
+  enrollmentSchema,
+  parentLinkSchema,
+  parentWriteSchema,
+  scheduleWriteSchema,
+  studentWriteSchema,
+  teacherAssignmentSchema,
+  teacherWriteSchema,
+} from './directory.js';
+export type {
+  ClassWrite,
+  EnrollmentWrite,
+  ParentLinkWrite,
+  ParentWrite,
+  ScheduleWrite,
+  StudentWrite,
+  TeacherAssignment,
+  TeacherWrite,
+} from './directory.js';
 export { delayPreparationSchema, pickupTransitionSchema } from './pickup.js';
 export type { DelayPreparationPayload, PickupTransitionPayload } from './pickup.js';

@@ -29,12 +29,8 @@ export default function OverviewPage() {
       .then(async (overview) => {
         setData(overview);
         if (!admin) return;
-        const [students, parents, teachers] = await Promise.all([
-          staffGet<{ items: unknown[] }>('/operations/students'),
-          staffGet<{ items: unknown[] }>('/operations/parents'),
-          staffGet<{ items: unknown[] }>('/operations/teachers'),
-        ]);
-        setDirectory({ students: students.items.length, links: parents.items.length, teachers: teachers.items.length });
+        const summary = await staffGet<{ students: number; links: number; teachers: number }>('/directory/summary');
+        setDirectory(summary);
       })
       .catch((caught: unknown) => setError(caught instanceof Error ? caught.message : 'Erreur'));
   }

@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { ACTIVE_PICKUP_STATUSES, PICKUP_STATUSES } from '@wasli/shared';
+import { ACTIVE_PICKUP_STATUSES } from '@wasli/shared';
 import type { AuthContext } from '../auth/auth.types.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -15,11 +15,7 @@ export class OperationsService {
   ) {}
 
   async overview(auth: AuthContext) {
-    const { requests } = await this.pickup.listForStaff(auth);
-    const counts = Object.fromEntries(PICKUP_STATUSES.map((status) => [status, 0])) as Record<string, number>;
-    for (const request of requests) {
-      counts[request.status] = (counts[request.status] ?? 0) + 1;
-    }
+    const [{ requests }, counts] = await Promise.all([this.pickup.listForStaff(auth), this.pickup.countByStatus(auth)]);
     const active = requests.filter((request) => ACTIVE.has(request.status));
     const recent = [...requests].sort((left, right) => right.requestedAt.localeCompare(left.requestedAt)).slice(0, 8);
     return { counts, active: active.slice(0, 8), recent };

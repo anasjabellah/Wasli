@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module.js';
 import { CentersModule } from './centers/centers.module.js';
 import { ClassesModule } from './classes/classes.module.js';
 import { ApiExceptionFilter } from './common/filters/api-exception.filter.js';
+import { DirectoryModule } from './directory/directory.module.js';
 import { HandoverModule } from './handover/handover.module.js';
 import { HealthModule } from './health/health.module.js';
 import { MembershipsModule } from './memberships/memberships.module.js';
@@ -52,6 +53,7 @@ import { UsersModule } from './users/users.module.js';
     HandoverModule,
     NotificationsModule,
     OperationsModule,
+    DirectoryModule,
     AuditModule,
   ],
   providers: [
